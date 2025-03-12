@@ -21,10 +21,15 @@ import carousel12 from './assets/carousel12.png'
 import carousel13 from './assets/carousel13.png'
 import carousel14 from './assets/carousel14.png'
 import Carousel from './components/Carousel'
+import SignUp from './components/SignUp'
+import Login from './components/Login'
 import { useEffect, useState } from 'react'
 
 function App() {
   const [showPopups, setShowPopups] = useState(true);
+  const [showSignUp, setShowSignUp] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [user, setUser] = useState(null);
   
   const carouselImages = [
     carousel1, carousel2, carousel3, carousel4,
@@ -60,6 +65,22 @@ function App() {
     };
   }, []);
 
+  const handleSignUpClick = () => {
+    setShowSignUp(true);
+  };
+
+  const handleCloseSignUp = () => {
+    setShowSignUp(false);
+  };
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
   return (
     <div className="app">
       <div className="sparkle"></div>
@@ -84,8 +105,17 @@ function App() {
             <img src={h2aiLogo} alt="H2.ai logo" className="h2ai-logo" />
           </div>
           <div className="header-right">
-            <button className="login-button">Log In</button>
-            <button className="sign-up-button">Sign Up</button>
+            {user ? (
+              <div className="user-menu">
+                <span>Welcome, {user.name}</span>
+                <button onClick={handleLogout} className="login-button">Logout</button>
+              </div>
+            ) : (
+              <>
+                <button onClick={() => setShowLogin(true)} className="login-button">Log In</button>
+                <button onClick={() => setShowSignUp(true)} className="sign-up-button">Sign Up</button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -97,7 +127,7 @@ function App() {
               <h1>
                 Fill and send medical forms <span className="highlight">accurately</span> and <span className="highlight">quickly</span> with Conform
               </h1>
-              <button className="get-started-button">Get Started</button>
+              <button className="get-started-button" onClick={handleSignUpClick}>Get Started</button>
             </div>
             <div className="carousel-section">
               <h2 className="carousel-title">Fill and send <span className="highlight">any</span> medical form</h2>
@@ -190,6 +220,15 @@ function App() {
           <p>&copy; 2025 Conform. All rights reserved.</p>
         </div>
       </footer>
+      
+      {showSignUp && <SignUp onClose={handleCloseSignUp} />}
+
+      {showLogin && (
+        <Login 
+          onClose={() => setShowLogin(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
     </div>
   )
 }

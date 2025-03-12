@@ -119,6 +119,46 @@
   gap: 1rem;
 }
 
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-menu span {
+  color: white;
+  font-weight: 500;
+}
+
+.nav-button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-button:first-of-type {
+  background: transparent;
+  border: 1px solid #2563eb;
+  color: #2563eb;
+}
+
+.nav-button:first-of-type:hover {
+  background: #2563eb10;
+}
+
+.nav-button:last-of-type {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: white;
+}
+
+.nav-button:last-of-type:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
 .login-button {
   color: #3B2B6D;
   background: white;
@@ -127,6 +167,7 @@
   cursor: pointer;
   transition: all 0.2s;
   border-radius: 2rem;
+  border: none;
 }
 
 .login-button:hover {
@@ -135,10 +176,10 @@
 
 .sign-up-button {
   background: #4FFFB0;
-  color: white;
+  color: #3B2B6D;
   border: none;
   padding: 0.5rem 1.5rem;
-  border-radius: 0.5rem;
+  border-radius: 2rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -154,21 +195,6 @@
   border-radius: 1rem;
   font-size: 0.875rem;
   color: white;
-}
-
-.sign-up-button {
-  background: #4FFFB0;
-  color: #3B2B6D;
-  border: none;
-  padding: 0.5rem 1.5rem;
-  border-radius: 2rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.sign-up-button:hover {
-  background: #F7FAFC;
 }
 
 .main-content {
