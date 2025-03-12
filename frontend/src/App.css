@@ -180,12 +180,27 @@
 }
 
 .hero-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 4rem;
   align-items: flex-start;
   padding-top: 12rem;
-  min-height: 90vh;
+  min-height: 80vh;
+}
+
+.hero-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 50%;
+}
+
+.hero-text {
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .hero-text h1 {
@@ -210,6 +225,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
+  margin: 0 auto;
 }
 
 .get-started-button:hover {
@@ -220,32 +236,96 @@
   background: #805AD5;
 }
 
-.hero-image {
+.carousel-section {
+  width: 1700px;
+  margin-top: 11rem;
+  margin-left: -17rem;
   position: relative;
+  overflow: visible;
+  text-align: center;
+}
+
+.carousel-title {
+  color: white;
+  font-size: 2rem;
+  line-height: 1.2;
+  margin-bottom: 3rem;
+  font-weight: 600;
+  position: relative;
+  z-index: 3;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  transform: translateX(1.25rem);
+}
+
+.carousel-title .highlight {
+  color: #E9D8FD;
+  font-style: italic;
+}
+
+.hero-image {
+  flex: 1.2;
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  margin-right: -1rem;
+}
+
+.form-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
 }
 
 .form-preview {
-  width: 100%;
-  max-width: 600px;
+  width: 110%;
+  max-width: 650px;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
   border: 12px solid #4c23c7;
   border-radius: 12px;
   margin-top: 0;
+  height: 500px;
+  max-height: 500px;
+  object-fit: cover;
+  object-position: top;
+  clip-path: inset(0 0 0 0);
 }
 
 @media (max-width: 768px) {
   .hero-section {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 2rem;
     text-align: center;
+    padding-top: 8rem;
+  }
+
+  .hero-content {
+    max-width: 100%;
+    align-items: center;
   }
 
   .hero-text h1 {
     font-size: 2.5rem;
   }
 
+  .carousel-section {
+    width: 100%;
+    max-width: 400px;
+    margin: 2rem auto;
+    margin-left: auto;
+  }
+
+  .carousel-title {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
   .hero-image {
-    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-right: 0;
   }
 
   .header-right {
@@ -255,19 +335,28 @@
   .h2ai-badge {
     display: none;
   }
+
+  .form-preview {
+    width: 100%;
+    max-width: 500px;
+    min-height: auto;
+  }
 }
 
 .features-section {
-  padding: 6rem 0;
+  padding: 3rem 0;
   text-align: center;
   position: relative;
   z-index: 10;
+  margin-top: -3rem;
 }
 
 .features-section h2 {
   color: white;
   font-size: 2.5rem;
   margin-bottom: 3rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .features-grid {
@@ -281,7 +370,7 @@
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 1rem;
-  padding: 2rem;
+  padding: 1rem;
   color: white;
   transition: transform 0.2s;
 }
@@ -293,18 +382,35 @@
 .feature-card h3 {
   font-size: 1.5rem;
   margin-bottom: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.feature-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  gap: 0.75rem;
+}
+
+.feature-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .feature-card p {
   opacity: 0.9;
-  line-height: 1.6;
+  line-height: 1.4;
+  font-size: 1.1rem;
 }
 
 .footer {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   padding: 4rem 1.5rem 2rem;
-  margin-top: 4rem;
+  margin-top: 2rem;
   position: relative;
   z-index: 10;
 }
@@ -321,12 +427,16 @@
   color: white;
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .footer-description {
   color: rgba(255, 255, 255, 0.8);
   margin-top: 1rem;
   max-width: 300px;
+  font-size: 1.1rem;
+  line-height: 1.5;
 }
 
 .footer-section ul {
@@ -336,12 +446,14 @@
 
 .footer-section ul li {
   margin-bottom: 0.75rem;
+  font-size: 1.1rem;
 }
 
 .footer-section ul a {
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   transition: color 0.2s;
+  line-height: 1.5;
 }
 
 .footer-section ul a:hover {
@@ -357,6 +469,7 @@
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   transition: color 0.2s;
+  font-size: 1.1rem;
 }
 
 .social-link:hover {
@@ -373,6 +486,8 @@
   justify-content: space-between;
   align-items: center;
   color: rgba(255, 255, 255, 0.6);
+  font-size: 1.1rem;
+  line-height: 1.5;
 }
 
 .sponsored-by {
@@ -430,16 +545,9 @@ html {
   width: 100%;
 }
 
-.form-container {
-  position: relative;
-  width: 100%;
-  max-width: 600px;
-}
-
 .popup {
   position: absolute;
   opacity: 0;
-  transition: all 0.3s ease-in-out;
   z-index: 2;
   max-width: 250px;
   height: auto;
@@ -456,28 +564,21 @@ html {
 
 @keyframes flash {
   0% { opacity: 0; transform: scale(0.95); }
-  12.5% { opacity: 1; transform: scale(1.05); }
-  25% { opacity: 0; transform: scale(0.95); }
+  75% { opacity: 1; transform: scale(1.05); }
   100% { opacity: 0; transform: scale(0.95); }
 }
 
 .popup-vermont {
-  top: 13%;
-  left: 33.3%;
+  top: 20.5%;
+  left: 36%;
   transform: translate(-30%, -10%);
   width: 220px;
 }
 
 .popup-diabetes {
-  top: 34%;
-  left: 17.7%;
+  top: 54%;
+  left: 20%;
   transform: translate(-50%, -50%);
-  width: 220px;
-}
-
-.popup-signature {
-  top: 75.5%;
-  left: 6%;
   width: 220px;
 }
 

@@ -1,0 +1,86 @@
+.carousel {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  margin: 0;
+  margin-left: 0;
+  overflow: hidden;
+}
+
+.carousel-track {
+  display: flex;
+  height: 100%;
+  animation: slide 60s linear infinite;
+}
+
+@keyframes slide {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-2380px); /* 14 images × 170px */
+  }
+}
+
+.carousel .card {
+  flex: 0 0 160px;
+  height: 200px;
+  margin-right: 10px;
+  border: 2px solid #4c23c7;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: scale(0.95);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.carousel .card:last-child {
+  margin-right: 0;
+}
+
+.carousel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  filter: blur(2.5px);
+}
+
+.card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+  text-align: center;
+  filter: none;
+  backdrop-filter: none;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.card-text {
+  color: #3B2B6D;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  filter: none;
+  letter-spacing: 0.02em;
+  width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Remove the smaller text class since we're using line breaks instead */
+.card-text.long-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
