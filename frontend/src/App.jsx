@@ -11,20 +11,30 @@ function App() {
   const [showPopups, setShowPopups] = useState(true);
 
   useEffect(() => {
-    const showDuration = 2000; // 1 second
-    const hideDuration = 1000; // 3 seconds
-    
+    let isMounted = true;
+    const showDuration = 3000;
+    const hideDuration = 1000;
+    let timeoutId;
+
     const togglePopups = () => {
-      setShowPopups(true);
-      setTimeout(() => {
-        setShowPopups(false);
-      }, showDuration);
+      if (isMounted) {
+        setShowPopups(true);
+        timeoutId = setTimeout(() => {
+          if (isMounted) {
+            setShowPopups(false);
+          }
+        }, showDuration);
+      }
     };
 
-    togglePopups(); // Initial call
-    const interval = setInterval(togglePopups, showDuration + hideDuration);
-    
-    return () => clearInterval(interval);
+    togglePopups();
+    const intervalId = setInterval(togglePopups, showDuration + hideDuration);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      clearInterval(intervalId);
+    };
   }, []);
 
   return (
@@ -45,7 +55,7 @@ function App() {
         <div className="header-content">
           <div className="logo-container">
             <img src={conformLogo} alt="Conform.ai logo" className="logo-image" />
-            <span className="logo-text">Conform.ai</span>
+            <span className="logo-text">Conform</span>
           </div>
           <div className="h2ai-logo-container">
             <img src={h2aiLogo} alt="H2.ai logo" className="h2ai-logo" />
@@ -61,7 +71,7 @@ function App() {
         <div className="hero-section">
           <div className="hero-text">
             <h1>
-              Fill and send medical forms <span className="highlight">accurately</span> and <span className="highlight">quickly</span> with Conform.ai
+              Fill and send medical forms <span className="highlight">accurately</span> and <span className="highlight">quickly</span> with Conform
             </h1>
             <button className="get-started-button">Get Started</button>
           </div>
@@ -88,7 +98,7 @@ function App() {
         </div>
 
         <div className="features-section">
-          <h2>Why Choose Conform.ai?</h2>
+          <h2>Why Choose Conform?</h2>
           <div className="features-grid">
             <div className="feature-card">
               <h3>Smart Form Filling</h3>
@@ -111,7 +121,7 @@ function App() {
           <div className="footer-section">
             <div className="logo-container">
               <img src={conformLogo} alt="Conform.ai logo" className="logo-image" />
-              <span className="logo-text">Conform.ai</span>
+              <span className="logo-text">Conform</span>
             </div>
             <p className="footer-description">Making medical form filling accurate and efficient.</p>
           </div>
@@ -145,7 +155,7 @@ function App() {
             <span>Sponsored by</span>
             <img src={h2aiLogo} alt="H2.ai logo" className="h2ai-logo" />
           </div>
-          <p>&copy; 2024 Conform.ai. All rights reserved.</p>
+          <p>&copy; 2025 Conform. All rights reserved.</p>
         </div>
       </footer>
     </div>
