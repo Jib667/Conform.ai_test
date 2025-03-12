@@ -23,6 +23,8 @@ import carousel14 from './assets/carousel14.png'
 import Carousel from './components/Carousel'
 import SignUp from './components/SignUp'
 import Login from './components/Login'
+import Dashboard from './components/Dashboard'
+import Sidebar from './components/Sidebar'
 import { useEffect, useState } from 'react'
 
 function App() {
@@ -30,6 +32,8 @@ function App() {
   const [showSignUp, setShowSignUp] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const carouselImages = [
     carousel1, carousel2, carousel3, carousel4,
@@ -65,6 +69,17 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.pathname === '/' && user) {
+        setShowDashboard(false);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [user]);
+
   const handleSignUpClick = () => {
     setShowSignUp(true);
   };
@@ -75,14 +90,51 @@ function App() {
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
+    setShowLogin(false);
+    setShowDashboard(true);
   };
 
   const handleLogout = () => {
     setUser(null);
+    setShowDashboard(false);
   };
+
+  const handleNavigate = (page) => {
+    if (page === 'home') {
+      setShowDashboard(false);
+      window.history.pushState({}, '', '/');
+    } else if (page === 'dashboard' && user) {
+      setShowDashboard(true);
+      window.history.pushState({}, '', '/dashboard');
+    }
+  };
+
+  if (showDashboard && user) {
+    return (
+      <>
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)} 
+          user={user}
+          onNavigate={handleNavigate}
+        />
+        <Dashboard 
+          user={user} 
+          onLogout={handleLogout} 
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="app">
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        user={user}
+        onNavigate={handleNavigate}
+      />
       <div className="sparkle"></div>
       <div className="sparkle"></div>
       <div className="sparkle"></div>
@@ -97,9 +149,20 @@ function App() {
       <div className="decorative-circle decorative-circle-2"></div>
       <header className="header">
         <div className="header-content">
-          <div className="logo-container">
-            <img src={conformLogo} alt="Conform.ai logo" className="logo-image" />
-            <span className="logo-text">Conform</span>
+          <div className="header-left">
+            <div className="hamburger-menu" onClick={() => setSidebarOpen(true)}>
+              <div className="hamburger-line"></div>
+              <div className="hamburger-line"></div>
+              <div className="hamburger-line"></div>
+            </div>
+            <div 
+              className="logo-container" 
+              onClick={() => setShowDashboard(false)}
+              style={{ cursor: 'pointer' }}
+            >
+              <img src={conformLogo} alt="Conform.ai logo" className="logo-image" />
+              <span className="logo-text">Conform</span>
+            </div>
           </div>
           <div className="h2ai-logo-container">
             <img src={h2aiLogo} alt="H2.ai logo" className="h2ai-logo" />
@@ -187,6 +250,37 @@ function App() {
               <span className="logo-text">Conform</span>
             </div>
             <p className="footer-description">Making medical form filling accurate and efficient.</p>
+          </div>
+          <div className="footer-section">
+            <h4>Pages</h4>
+            <ul>
+              <li>
+                <a 
+                  href="/" 
+                  onClick={(e) => { 
+                    e.preventDefault(); 
+                    window.history.pushState({}, '', '/');
+                    setShowDashboard(false); 
+                  }}
+                >
+                  Home
+                </a>
+              </li>
+              {user && (
+                <li>
+                  <a 
+                    href="/dashboard" 
+                    onClick={(e) => { 
+                      e.preventDefault(); 
+                      window.history.pushState({}, '', '/dashboard');
+                      setShowDashboard(true); 
+                    }}
+                  >
+                    Dashboard
+                  </a>
+                </li>
+              )}
+            </ul>
           </div>
           <div className="footer-section">
             <h4>Product</h4>
