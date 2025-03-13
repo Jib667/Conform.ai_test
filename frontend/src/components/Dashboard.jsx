@@ -1,13 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import conformLogo from '../assets/conform_logo.png';
 import h2aiLogo from '../assets/h2ai_logo.png';
 import './Dashboard.css';
+import EditProfile from './EditProfile';
 
-const Dashboard = ({ user, onLogout, onToggleSidebar }) => {
+const Dashboard = ({ user, onLogout, onToggleSidebar, onUpdateUser }) => {
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [forms, setForms] = useState([]);
+  
   const handleHomeClick = (e) => {
     e.preventDefault();
     window.history.pushState({}, '', '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+  
+  const handleCreateForm = () => {
+    // This would typically open a form editor or create a new form
+    const newForm = {
+      id: Date.now(),
+      title: `New Form ${forms.length + 1}`,
+      createdAt: new Date().toISOString(),
+      elements: []
+    };
+    
+    setForms([...forms, newForm]);
+  };
+  
+  const handleEditForm = (formId) => {
+    // This would open the form editor for the selected form
+    console.log(`Editing form ${formId}`);
+  };
+  
+  const handleDeleteForm = (formId) => {
+    setForms(forms.filter(form => form.id !== formId));
+  };
+  
+  const handleUpdateSuccess = (updatedUser) => {
+    // Pass the updated user data to the parent component
+    if (onUpdateUser) {
+      onUpdateUser(updatedUser);
+    }
   };
 
   return (
@@ -56,8 +88,51 @@ const Dashboard = ({ user, onLogout, onToggleSidebar }) => {
 
       <main className="dashboard-content">
         <div className="dashboard-header">
-          <h1>Your Dashboard</h1>
+          <h1>{user?.name.split(' ')[0]}'s Dashboard</h1>
           <p>Manage your medical forms and submissions</p>
+        </div>
+
+        {/* Form Editor Card */}
+        <div className="form-editor-card">
+          <div className="form-editor-header">
+            <h3>Form Editor</h3>
+            <button 
+              className="form-editor-button"
+              onClick={handleCreateForm}
+            >
+              Create New Form
+            </button>
+          </div>
+          
+          <div className="form-editor-content">
+            {forms.length > 0 ? (
+              <ul className="form-editor-list">
+                {forms.map(form => (
+                  <li key={form.id} className="form-editor-item">
+                    <span className="form-editor-item-title">{form.title}</span>
+                    <div className="form-editor-item-actions">
+                      <button 
+                        className="form-editor-item-button"
+                        onClick={() => handleEditForm(form.id)}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        className="form-editor-item-button"
+                        onClick={() => handleDeleteForm(form.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="form-editor-empty">
+                <p>You haven't created any forms yet. Click "Create New Form" to get started.</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="dashboard-grid">
@@ -81,7 +156,12 @@ const Dashboard = ({ user, onLogout, onToggleSidebar }) => {
               <p><strong>Healthcare Title:</strong> {user?.healthcareTitle}</p>
               <p><strong>Hospital System:</strong> {user?.hospitalSystem}</p>
             </div>
-            <button className="dashboard-button">Edit Profile</button>
+            <button 
+              className="dashboard-button" 
+              onClick={() => setShowEditProfile(true)}
+            >
+              Edit Profile
+            </button>
           </div>
         </div>
       </main>
@@ -134,6 +214,14 @@ const Dashboard = ({ user, onLogout, onToggleSidebar }) => {
           <p>&copy; 2025 Conform. All rights reserved.</p>
         </div>
       </footer>
+
+      {showEditProfile && (
+        <EditProfile 
+          user={user} 
+          onClose={() => setShowEditProfile(false)} 
+          onUpdateSuccess={handleUpdateSuccess}
+        />
+      )}
     </div>
   );
 };

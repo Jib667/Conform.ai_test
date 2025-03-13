@@ -34,6 +34,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [showDashboard, setShowDashboard] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   
   const carouselImages = [
     carousel1, carousel2, carousel3, carousel4,
@@ -109,6 +110,18 @@ function App() {
     }
   };
 
+  const handleDashboardClick = (e) => {
+    if (!user) {
+      e.preventDefault();
+      setShowLoginPrompt(true);
+      setTimeout(() => setShowLoginPrompt(false), 3000);
+    }
+  };
+
+  const handleUpdateUser = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
   if (showDashboard && user) {
     return (
       <>
@@ -117,11 +130,13 @@ function App() {
           onClose={() => setSidebarOpen(false)} 
           user={user}
           onNavigate={handleNavigate}
+          handleDashboardClick={handleDashboardClick}
         />
         <Dashboard 
           user={user} 
           onLogout={handleLogout} 
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onUpdateUser={handleUpdateUser}
         />
       </>
     );
@@ -134,6 +149,7 @@ function App() {
         onClose={() => setSidebarOpen(false)} 
         user={user}
         onNavigate={handleNavigate}
+        handleDashboardClick={handleDashboardClick}
       />
       <div className="sparkle"></div>
       <div className="sparkle"></div>
@@ -266,20 +282,14 @@ function App() {
                   Home
                 </a>
               </li>
-              {user && (
-                <li>
-                  <a 
-                    href="/dashboard" 
-                    onClick={(e) => { 
-                      e.preventDefault(); 
-                      window.history.pushState({}, '', '/dashboard');
-                      setShowDashboard(true); 
-                    }}
-                  >
-                    Dashboard
-                  </a>
-                </li>
-              )}
+              <li>
+                <a 
+                  href="/dashboard" 
+                  onClick={handleDashboardClick}
+                >
+                  Dashboard
+                </a>
+              </li>
             </ul>
           </div>
           <div className="footer-section">
@@ -322,6 +332,12 @@ function App() {
           onClose={() => setShowLogin(false)}
           onLoginSuccess={handleLoginSuccess}
         />
+      )}
+
+      {showLoginPrompt && (
+        <div className="login-prompt">
+          <p>Please log in to access the dashboard</p>
+        </div>
       )}
     </div>
   )

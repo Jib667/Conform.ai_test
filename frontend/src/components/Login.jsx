@@ -3,71 +3,53 @@ import './Login.css';
 
 const Login = ({ onClose, onLoginSuccess }) => {
   const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!email.trim()) {
-      setSubmitError('Email is required');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    setSubmitError('');
-    
+    setError('');
+    setIsLoading(true);
+
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('http://localhost:5000/api/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
+        throw new Error(data.detail || 'Login failed');
       }
-      
-      setSubmitSuccess(true);
-      if (onLoginSuccess) {
-        onLoginSuccess(data.user);
-      }
-      
-      // Close modal after successful login
+
+      setIsSuccess(true);
       setTimeout(() => {
-        if (onClose) onClose();
-      }, 2000);
-      
-    } catch (error) {
-      setSubmitError(error.message);
+        onLoginSuccess(data.user);
+      }, 1500);
+    } catch (err) {
+      setError(err.message);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-header">
           <h2>Login to Conform</h2>
-          <p>Welcome back! Please enter your email to continue.</p>
-          {onClose && (
-            <button className="close-button" onClick={onClose}>×</button>
-          )}
+          <button className="close-button" onClick={onClose}>×</button>
         </div>
         
-        {submitSuccess ? (
-          <div className="success-message">
-            <h3>Welcome back!</h3>
-            <p>You have successfully logged in.</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="login-form">
+        {!isSuccess ? (
+          <form onSubmit={handleSubmit}>
+            {error && <div className="error-message">{error}</div>}
+            
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input
@@ -75,25 +57,25 @@ const Login = ({ onClose, onLoginSuccess }) => {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
                 required
               />
             </div>
             
-            {submitError && (
-              <div className="error-message">
-                {submitError}
-              </div>
-            )}
-            
-            <button 
-              type="submit" 
-              className="submit-button"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Logging in...' : 'Login'}
-            </button>
+            <div className="form-actions centered single-button">
+              <button 
+                type="submit" 
+                className="action-button submit-button"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Logging in...' : 'Login'}
+              </button>
+            </div>
           </form>
+        ) : (
+          <div className="success-message">
+            <h3>Login Successful!</h3>
+            <p>Redirecting to your dashboard...</p>
+          </div>
         )}
       </div>
     </div>

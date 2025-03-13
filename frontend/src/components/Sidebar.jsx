@@ -2,7 +2,7 @@ import React from 'react';
 import './Sidebar.css';
 import conformLogo from '../assets/conform_logo.png';
 
-const Sidebar = ({ isOpen, onClose, user, onNavigate }) => {
+const Sidebar = ({ isOpen, onClose, user, onNavigate, handleDashboardClick }) => {
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}></div>
@@ -30,20 +30,23 @@ const Sidebar = ({ isOpen, onClose, user, onNavigate }) => {
                 Home
               </a>
             </li>
-            {user && (
-              <li className="sidebar-menu-item">
-                <a 
-                  href="/dashboard" 
-                  onClick={(e) => {
+            <li className="sidebar-menu-item">
+              <a 
+                href="/dashboard" 
+                onClick={(e) => {
+                  if (user) {
                     e.preventDefault();
                     onNavigate('dashboard');
                     onClose();
-                  }}
-                >
-                  Dashboard
-                </a>
-              </li>
-            )}
+                  } else {
+                    handleDashboardClick(e);
+                    onClose();
+                  }
+                }}
+              >
+                Dashboard
+              </a>
+            </li>
             <li className="sidebar-menu-item">
               <a href="#">Features</a>
             </li>

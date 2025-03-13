@@ -187,7 +187,7 @@
   color: #3B2B6D;
   background: white;
   padding: 0.5rem 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   border-radius: 2rem;
@@ -670,3 +670,28 @@ html {
 .sparkle:nth-child(19) { top: 90%; right: 90%; animation-delay: 1.8s; }
 .sparkle:nth-child(20) { top: 100%; right: 100%; animation-delay: 1.9s; }
 .sparkle:nth-child(10) { top: 35%; right: 30%; animation-delay: 1.8s; }
+
+.login-prompt {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(59, 43, 109, 0.9);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: fadeInOut 3s ease-in-out;
+  text-align: center;
+  font-size: 1.2rem;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}

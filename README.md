@@ -11,42 +11,59 @@ A web application for streamlining medical form filling and processing.
 
 ## Project Structure
 
-- `frontend/`: React-based frontend application with Vite and Tailwind CSS
-- `backend/`: Express.js backend with SQLite database
+- `frontend/`: React-based frontend application with Vite
+- `backend/`: Python FastAPI backend with SQLite database
 
 ## Setup Instructions
 
 ### Quick Setup (Recommended)
 
-1. Install all dependencies at once:
-   ```
-   npm run install:all
+1. Set up the backend:
+   ```bash
+   cd backend
+   chmod +x setup.sh
+   ./setup.sh
+   source venv/bin/activate
    ```
 
-2. Start both servers simultaneously:
+2. Start the backend server:
+   ```bash
+   python server.py
    ```
+
+3. In a new terminal, set up and start the frontend:
+   ```bash
+   cd frontend
+   npm install
    npm run dev
    ```
 
-   This will start both the backend server on http://localhost:5000 and the frontend server on http://localhost:5173
+   The backend server will run on http://localhost:5000 and the frontend server on http://localhost:5173
 
 ### Manual Setup
 
 #### Backend Setup
 
 1. Navigate to the backend directory:
-   ```
+   ```bash
    cd backend
    ```
 
-2. Install dependencies:
-   ```
-   npm install
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Start the backend server:
+3. Install dependencies:
+   ```bash
+   pip install uv
+   uv pip install -r requirements.txt
    ```
-   npm run dev
+
+4. Start the backend server:
+   ```bash
+   python server.py
    ```
    
    The server will run on http://localhost:5000
@@ -54,17 +71,17 @@ A web application for streamlining medical form filling and processing.
 #### Frontend Setup
 
 1. Navigate to the frontend directory:
-   ```
+   ```bash
    cd frontend
    ```
 
 2. Install dependencies:
-   ```
+   ```bash
    npm install
    ```
 
 3. Start the frontend development server:
-   ```
+   ```bash
    npm run dev
    ```
    
@@ -84,10 +101,17 @@ The application includes a sign-up form that collects:
 
 This information is stored in an SQLite database on the backend.
 
+## API Documentation
+
+When the backend server is running, you can access the automatically generated API documentation at:
+- http://localhost:5000/docs (Swagger UI)
+- http://localhost:5000/redoc (ReDoc)
+
 ## Technologies Used
 
 - React.js
 - Vite
-- Tailwind CSS
-- Express.js
-- SQLite 
+- Python 3.8+
+- FastAPI
+- SQLite
+- UV (Python package installer) 
