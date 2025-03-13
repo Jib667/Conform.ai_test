@@ -48,9 +48,10 @@
   padding: 0;
   line-height: 1;
   position: absolute;
-  right: 0;
-  top: 50%;
   transform: translateY(-50%);
+  top: 0.7rem;
+  right: 0.1rem;
+  z-index: 10;
 }
 
 .form-group {
@@ -87,8 +88,6 @@
   gap: 1rem;
   margin-top: 1.5rem;
   padding-top: 0.5rem;
-  position: relative;
-  top: -0.5rem;
 }
 
 .action-button {
@@ -124,15 +123,15 @@
 }
 
 .submit-button {
-  background: #4FFFB0;
-  color: #3B2B6D;
-  border: none;
+  background: rgba(79, 255, 176, 0.2) !important;
+  color: #4FFFB0 !important;
+  border: 1px solid rgba(79, 255, 176, 0.4) !important;
   position: relative;
-  top: 1px;
+  top: 0;
 }
 
 .submit-button:hover {
-  background: #3ee69f;
+  background: rgba(79, 255, 176, 0.3) !important;
 }
 
 .submit-button:disabled,

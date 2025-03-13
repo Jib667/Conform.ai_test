@@ -105,9 +105,17 @@ const EditProfile = ({ user, onClose, onUpdateSuccess }) => {
     }
   };
   
+  // Add a handler for clicking outside the modal
+  const handleOverlayClick = (e) => {
+    // Only close if the overlay itself was clicked (not its children)
+    if (e.target.className === 'modal-overlay') {
+      onClose();
+    }
+  };
+  
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <div className="modal-overlay" onClick={handleOverlayClick}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Edit Profile</h2>
           <button className="close-button" onClick={onClose}>×</button>

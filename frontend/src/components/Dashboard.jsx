@@ -36,6 +36,10 @@ const Dashboard = ({
   const [expandedPatient, setExpandedPatient] = useState(null);
   const [showDeletePatientConfirm, setShowDeletePatientConfirm] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState(null);
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [newPatientName, setNewPatientName] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const patientFileInputRef = useRef(null);
   
   // Fetch user's PDFs on component mount
   useEffect(() => {
@@ -199,14 +203,23 @@ const Dashboard = ({
         id: pdfToEdit.id,
         title: pdfToEdit.originalFilename.replace('.pdf', ''),
         createdAt: pdfToEdit.uploadDate,
-        pdfUrl: pdfToEdit.url
+        pdfUrl: pdfToEdit.url,
+        filename: pdfToEdit.filename,
+        originalFilename: pdfToEdit.originalFilename
       };
       
       // Set the form to be edited
       setFormToEdit(formData);
       
-      // Show the patient assignment popup
-      setShowPatientAssignmentPopup(true);
+      // Show the Form Editor
+      setShowFormEditor(true);
+      
+      // Close any open modals
+      setShowAllForms(false);
+      setExpandedPatient(null);
+      
+      // Scroll to top for better user experience
+      scrollToTop();
     } else {
       console.error(`Form with ID ${formId} not found`);
       setUploadError('Form not found');
@@ -508,6 +521,101 @@ const Dashboard = ({
     setPatientToDelete(null);
   };
 
+  const handleAddPatient = async (e) => {
+    e.preventDefault();
+    
+    if (!newPatientName.trim()) {
+      setUploadError('Patient name is required');
+      setTimeout(() => setUploadError(''), 3000);
+      return;
+    }
+    
+    try {
+      // First create the patient
+      const patientResponse = await fetch(`/api/user/${user.id}/patients`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: newPatientName })
+      });
+      
+      if (!patientResponse.ok) {
+        const errorData = await patientResponse.json();
+        throw new Error(errorData.detail || 'Failed to create patient');
+      }
+      
+      const patientData = await patientResponse.json();
+      const newPatientId = patientData.patient.id;
+      
+      // If files were selected, upload them and associate with the new patient
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('user_id', user.id);
+          
+          const uploadResponse = await fetch('/api/upload-pdf', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload file: ${file.name}`);
+          }
+          
+          const uploadData = await uploadResponse.json();
+          const pdfId = uploadData.pdf.id;
+          
+          // Associate the PDF with the patient
+          await fetch(`/api/pdfs/${pdfId}/patient`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ patient_id: newPatientId })
+          });
+        }
+      }
+      
+      // Refresh the patients list and PDFs
+      await fetchUserPatients();
+      await fetchUserPdfs();
+      
+      // Show success message
+      setUploadSuccess(`Patient "${newPatientName}" created successfully`);
+      setTimeout(() => setUploadSuccess(''), 3000);
+      
+      // Reset form and close modal
+      setNewPatientName('');
+      setSelectedFiles([]);
+      setShowAddPatientModal(false);
+      
+    } catch (error) {
+      console.error('Error adding patient:', error);
+      setUploadError(`Failed to add patient: ${error.message}`);
+      setTimeout(() => setUploadError(''), 5000);
+    }
+  };
+
+  const handlePatientFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    
+    // Validate files (ensure they're PDFs)
+    const validFiles = files.filter(file => file.name.toLowerCase().endsWith('.pdf'));
+    
+    if (validFiles.length !== files.length) {
+      setUploadError('Only PDF files are allowed');
+      setTimeout(() => setUploadError(''), 3000);
+    }
+    
+    setSelectedFiles(validFiles);
+  };
+
+  const handleAddNewPatientClick = () => {
+    setShowAddPatientModal(true);
+  };
+
   if (showFormEditor) {
     // Find the form to edit
     const formToEdit = currentFormId ? forms.find(form => form.id === currentFormId) : null;
@@ -700,7 +808,7 @@ const Dashboard = ({
               <p><strong>Hospital System:</strong> {user?.hospitalSystem}</p>
             </div>
             <button 
-              className="dashboard-button" 
+              className="dashboard-button edit-profile-button"
               onClick={() => setShowEditProfile(true)}
             >
               Edit Profile
@@ -780,7 +888,7 @@ const Dashboard = ({
             
             <button 
               className="dashboard-button"
-              onClick={() => setShowPatientAssignmentPopup(true)}
+              onClick={handleAddNewPatientClick}
             >
               Add New Patient
             </button>
@@ -1113,6 +1221,82 @@ const Dashboard = ({
                   Delete
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add New Patient Modal */}
+      {showAddPatientModal && (
+        <div className="modal-overlay" onClick={() => setShowAddPatientModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Add New Patient</h2>
+              <button className="modal-close" onClick={() => setShowAddPatientModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleAddPatient}>
+                <div className="form-group">
+                  <label htmlFor="patientName">Patient Name</label>
+                  <input
+                    type="text"
+                    id="patientName"
+                    value={newPatientName}
+                    onChange={(e) => setNewPatientName(e.target.value)}
+                    placeholder="Enter patient name"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Upload Patient Forms (Optional)</label>
+                  <div className="file-upload-container">
+                    <button
+                      type="button"
+                      className="file-select-button"
+                      onClick={() => patientFileInputRef.current.click()}
+                    >
+                      Select PDF Files
+                    </button>
+                    <input
+                      type="file"
+                      ref={patientFileInputRef}
+                      onChange={handlePatientFileSelect}
+                      multiple
+                      accept=".pdf"
+                      style={{ display: 'none' }}
+                    />
+                    {selectedFiles.length > 0 && (
+                      <div className="selected-files">
+                        <p>{selectedFiles.length} file(s) selected</p>
+                        <ul className="file-list">
+                          {selectedFiles.map((file, index) => (
+                            <li key={index} className="file-item">
+                              {file.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="form-actions centered">
+                  <button
+                    type="button"
+                    className="action-button cancel-button"
+                    onClick={() => setShowAddPatientModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="action-button submit-button"
+                  >
+                    Add Patient
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

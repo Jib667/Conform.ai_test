@@ -519,43 +519,50 @@
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #3B2B6D 0%, #241656 100%);
+  position: relative; /* Add this to make absolute positioning work */
+  background: #3B2B6D;
   border-radius: 1rem;
+  padding: 2rem;
   width: 90%;
   max-width: 800px;
-  max-height: 80vh;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-header h2 {
-  color: #E9D8FD;
   margin: 0;
+  color: #E9D8FD;
+  font-size: 1.75rem;
 }
 
+/* Fix the close button positioning */
 .modal-close {
   background: none;
   border: none;
-  color: white;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 1.5rem;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s;
+  position: absolute;
+  top: 0.1rem;
+  right: 0.1rem;
+  z-index: 10;
 }
 
 .modal-close:hover {
-  opacity: 1;
+  color: white;
 }
 
 .modal-body {
@@ -1138,8 +1145,114 @@
   margin: 0;
 }
 
+/* Update patient info action buttons to match EditProfile modal */
 .patient-info-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 1rem;
   margin-top: 2rem;
+  padding-top: 0.5rem;
+}
+
+.patient-info-actions .dashboard-button {
+  flex: 1;
+  max-width: 180px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-size: 1rem;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
+}
+
+.patient-info-actions .dashboard-button.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.patient-info-actions .dashboard-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.patient-info-actions .delete-button {
+  background: rgba(255, 79, 79, 0.2);
+  color: #ff4f4f;
+  border: 1px solid rgba(255, 79, 79, 0.4);
+  max-width: 180px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.patient-info-actions .delete-button:hover {
+  background: rgba(255, 79, 79, 0.3);
+}
+
+/* Update the Edit Profile button to use translucent green styling */
+.edit-profile-button {
+  background: rgba(79, 255, 176, 0.2) !important; /* Translucent green background */
+  color: #4FFFB0 !important; /* Green text color */
+  border: 1px solid rgba(79, 255, 176, 0.4) !important; /* Green border */
+}
+
+.edit-profile-button:hover {
+  background: rgba(79, 255, 176, 0.3) !important; /* Slightly darker on hover */
+}
+
+/* Styles for the Add New Patient modal */
+.file-upload-container {
+  margin-top: 0.5rem;
+}
+
+.file-select-button {
+  background: rgba(79, 255, 176, 0.2);
+  color: #4FFFB0;
+  border: 1px solid rgba(79, 255, 176, 0.4);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.file-select-button:hover {
+  background: rgba(79, 255, 176, 0.3);
+}
+
+.selected-files {
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.selected-files p {
+  margin: 0 0 0.5rem 0;
+  color: #4FFFB0;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.file-item {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
+}
+
+.file-item:last-child {
+  border-bottom: none;
 } 
