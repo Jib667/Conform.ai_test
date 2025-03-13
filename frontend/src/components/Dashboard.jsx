@@ -115,7 +115,7 @@ const Dashboard = ({
         </div>
 
         <div className="dashboard-section">
-          <h2 style={{ color: 'white' }}>Upload Fillable Form</h2>
+          <h2 style={{ color: 'white' }}>Upload Custom Fillable Form</h2>
           <div className="forms-grid">
             <div className="create-form-card" onClick={handleCreateForm}>
               <div className="create-form-icon">+</div>
@@ -154,6 +154,7 @@ const Dashboard = ({
           <div className="dashboard-card">
             <h2>Recent Forms</h2>
             <p className="recent-forms-empty">No forms submitted yet</p>
+            <button className="dashboard-button view-all-button">View All Forms</button>
           </div>
 
           <div className="dashboard-card">

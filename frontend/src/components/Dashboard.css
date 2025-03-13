@@ -313,14 +313,14 @@
 .create-form-card {
   background: rgba(79, 255, 176, 0.1);
   border: 1px dashed rgba(79, 255, 176, 0.5);
-  border-radius: 1rem;
+  border-radius: 2rem;
   padding: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  height: 120px; /* Fixed height */
+  height: 120px;
   text-align: center;
 }
 
@@ -356,16 +356,16 @@
 .template-create-button {
   background: rgba(79, 255, 176, 0.1);
   border: 1px dashed rgba(79, 255, 176, 0.5);
-  border-radius: 1rem;
+  border-radius: 2rem;
   padding: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  height: 60px; /* Smaller than the main upload button */
+  height: 60px;
   text-align: center;
-  margin-top: auto; /* Push it to the bottom of the card */
+  margin-top: auto;
 }
 
 .template-create-button:hover {
@@ -376,4 +376,16 @@
 .template-create-icon {
   font-size: 2rem;
   color: #4FFFB0;
+}
+
+/* Style for the View All Forms button */
+.view-all-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: auto;
+}
+
+.view-all-button:hover {
+  background: rgba(255, 255, 255, 0.2);
 } 
