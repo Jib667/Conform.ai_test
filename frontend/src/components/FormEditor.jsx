@@ -18,7 +18,9 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) =
 
   const handleHomeClick = (e) => {
     e.preventDefault();
+    // Navigate to home but maintain login state
     window.history.pushState({}, '', '/');
+    // This will trigger the App component to update its UI without logging out
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
@@ -118,7 +120,11 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) =
               <div className="hamburger-line"></div>
               <div className="hamburger-line"></div>
             </div>
-            <div className="logo-container">
+            <div 
+              className="logo-container" 
+              onClick={handleHomeClick}
+              style={{ cursor: 'pointer' }}
+            >
               <img src={conformLogo} alt="Conform.ai logo" className="logo-image" />
               <span className="logo-text">Conform</span>
             </div>
@@ -409,7 +415,18 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) =
           <div className="footer-section">
             <h4>Pages</h4>
             <ul>
-              <li><a href="/" onClick={handleHomeClick}>Home</a></li>
+              <li>
+                <a 
+                  href="/" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.history.pushState({}, '', '/');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }}
+                >
+                  Home
+                </a>
+              </li>
               <li>
                 <a 
                   href="/dashboard" 
