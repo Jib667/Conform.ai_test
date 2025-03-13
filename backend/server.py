@@ -88,6 +88,12 @@ def init_db():
         ALTER TABLE uploaded_pdfs ADD COLUMN patient_id INTEGER
         ''')
     
+    # Add patient_name column to pdfs table if it doesn't exist
+    if 'patient_name' not in column_names:
+        cursor.execute('''
+        ALTER TABLE uploaded_pdfs ADD COLUMN patient_name TEXT
+        ''')
+    
     conn.commit()
     cursor.close()
     print("Connected to the SQLite database")
@@ -245,7 +251,7 @@ async def upload_pdf(
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Verify the user exists
+        # Verify the user exists and get full name
         cursor.execute("SELECT name FROM users WHERE id = ?", (user_id,))
         user = cursor.fetchone()
         
@@ -253,8 +259,8 @@ async def upload_pdf(
             conn.close()
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Get user's last name
-        last_name = user[0].split()[-1] if len(user[0].split()) > 1 else user[0]
+        # Get user's full name and replace spaces with underscores
+        doctor_name = user[0].replace(' ', '_')
         
         # Check if the file is a PDF
         if not file.filename.lower().endswith('.pdf'):
@@ -269,8 +275,8 @@ async def upload_pdf(
         count = cursor.fetchone()[0]
         upload_number = count + 1
         
-        # Create the new filename
-        new_filename = f"custom_upload{upload_number:03d}_{last_name}.pdf"
+        # Create the new filename (without patient name initially)
+        new_filename = f"custom_upload{upload_number:03d}_{doctor_name}_unassigned.pdf"
         file_path = os.path.join(UPLOAD_DIR, new_filename)
         
         print(f"Saving file to: {file_path}")
@@ -279,61 +285,57 @@ async def upload_pdf(
         contents = await file.read()
         print(f"Read {len(contents)} bytes from uploaded file")
         
-        # Save the file
-        with open(file_path, "wb") as buffer:
-            buffer.write(contents)
+        # Write to file
+        with open(file_path, "wb") as f:
+            f.write(contents)
         
-        print(f"File saved successfully to {file_path}")
+        # Check if the PDF is fillable
+        is_fillable = is_pdf_fillable(file_path)
+        print(f"PDF is fillable: {is_fillable}")
         
-        # Save the file information to the database
+        # Save the PDF information to the database
         cursor.execute(
             """
             INSERT INTO uploaded_pdfs (user_id, filename, original_filename, is_fillable)
             VALUES (?, ?, ?, ?)
             """,
-            (user_id, new_filename, file.filename, True)
+            (user_id, new_filename, file.filename, is_fillable)
         )
         conn.commit()
-        print(f"Database record created for {new_filename}")
         
-        # Get the uploaded PDF information
+        # Get the ID of the inserted PDF
+        pdf_id = cursor.lastrowid
+        
+        # Get the PDF information
         cursor.execute(
             """
             SELECT id, filename, original_filename, upload_date
             FROM uploaded_pdfs
-            WHERE user_id = ? AND filename = ?
+            WHERE id = ?
             """,
-            (user_id, new_filename)
+            (pdf_id,)
         )
-        pdf_info = cursor.fetchone()
         
-        # Create a response dictionary
-        response_data = {
-            "message": "PDF uploaded successfully",
-            "pdf": {
-                "id": pdf_info[0],
-                "filename": pdf_info[1],
-                "originalFilename": pdf_info[2],
-                "uploadDate": pdf_info[3],
-                "url": f"/uploads/{new_filename}"
-            }
-        }
+        pdf = cursor.fetchone()
         
-        # Close the database connection
         conn.close()
         
-        return response_data
-        
+        return {
+            "message": "PDF uploaded successfully",
+            "pdf": {
+                "id": pdf[0],
+                "filename": pdf[1],
+                "originalFilename": pdf[2],
+                "uploadDate": pdf[3],
+                "url": f"/uploads/{pdf[1]}",
+                "isFillable": is_fillable
+            }
+        }
     except Exception as e:
-        # If any error occurs, make sure to clean up
-        if 'file_path' in locals() and os.path.exists(file_path):
-            os.remove(file_path)
         if 'conn' in locals():
             conn.close()
-        print(f"Error during PDF upload: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        print(f"Error uploading PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload PDF: {str(e)}")
 
 # Endpoint to get all uploaded PDFs for a user with patient information
 @app.get("/api/user/{user_id}/pdfs")
@@ -516,15 +518,76 @@ async def assign_patient_to_pdf(pdf_id: int, request: Request):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
+        # Get the patient name
         cursor.execute(
-            "UPDATE uploaded_pdfs SET patient_id = ? WHERE id = ?",
-            (patient_id, pdf_id)
+            "SELECT name FROM patients WHERE id = ?",
+            (patient_id,)
+        )
+        patient = cursor.fetchone()
+        
+        if not patient:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        patient_name = patient[0].replace(' ', '_')
+        
+        # Get the current PDF filename
+        cursor.execute(
+            "SELECT filename, user_id FROM uploaded_pdfs WHERE id = ?",
+            (pdf_id,)
+        )
+        pdf_info = cursor.fetchone()
+        
+        if not pdf_info:
+            conn.close()
+            raise HTTPException(status_code=404, detail="PDF not found")
+        
+        current_filename = pdf_info[0]
+        user_id = pdf_info[1]
+        
+        # Get the doctor's name
+        cursor.execute(
+            "SELECT name FROM users WHERE id = ?",
+            (user_id,)
+        )
+        doctor = cursor.fetchone()
+        doctor_name = doctor[0].replace(' ', '_')
+        
+        # Extract the upload number from the current filename
+        match = re.search(r'custom_upload(\d+)_', current_filename)
+        if not match:
+            # If the filename doesn't match the expected pattern, just update the patient ID
+            cursor.execute(
+                "UPDATE uploaded_pdfs SET patient_id = ? WHERE id = ?",
+                (patient_id, pdf_id)
+            )
+            conn.commit()
+            conn.close()
+            return {"success": True}
+        
+        upload_number = match.group(1)
+        
+        # Create the new filename with patient name
+        new_filename = f"custom_upload{upload_number}_{doctor_name}_{patient_name}.pdf"
+        
+        # Rename the file
+        old_path = os.path.join(UPLOAD_DIR, current_filename)
+        new_path = os.path.join(UPLOAD_DIR, new_filename)
+        
+        if os.path.exists(old_path):
+            os.rename(old_path, new_path)
+            print(f"Renamed file from {old_path} to {new_path}")
+        
+        # Update the database with the new filename and patient ID
+        cursor.execute(
+            "UPDATE uploaded_pdfs SET filename = ?, patient_id = ? WHERE id = ?",
+            (new_filename, patient_id, pdf_id)
         )
         conn.commit()
         
         conn.close()
         
-        return {"success": True}
+        return {"success": True, "newFilename": new_filename}
     except Exception as e:
         if 'conn' in locals():
             conn.close()
@@ -539,7 +602,7 @@ def delete_patient(patient_id: int):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        # First, get the patient info for logging
+        # First, check if the patient exists
         cursor.execute(
             "SELECT name, user_id FROM patients WHERE id = ?",
             (patient_id,)
@@ -553,21 +616,28 @@ def delete_patient(patient_id: int):
         patient_name, user_id = patient_info
         print(f"Deleting patient: {patient_name} (ID: {patient_id}) for user {user_id}")
         
-        # Update any PDFs that reference this patient to remove the reference
-        cursor.execute(
-            "UPDATE uploaded_pdfs SET patient_id = NULL, patient_name = NULL WHERE patient_id = ?",
-            (patient_id,)
-        )
+        # Check if patient_name column exists in uploaded_pdfs table
+        cursor.execute("PRAGMA table_info(uploaded_pdfs)")
+        columns = cursor.fetchall()
+        column_names = [column[1] for column in columns]
         
-        # Also update PDFs that might have the patient name but not the ID
-        cursor.execute(
-            "UPDATE uploaded_pdfs SET patient_name = NULL WHERE patient_name = ? AND user_id = ?",
-            (patient_name, user_id)
-        )
+        # Update PDFs that reference this patient
+        if 'patient_id' in column_names:
+            cursor.execute(
+                "UPDATE uploaded_pdfs SET patient_id = NULL WHERE patient_id = ?",
+                (patient_id,)
+            )
+            print(f"Updated PDFs to remove patient_id references to patient {patient_id}")
         
-        print(f"Updated PDFs to remove references to patient {patient_id}")
+        # If patient_name column exists, update it too
+        if 'patient_name' in column_names:
+            cursor.execute(
+                "UPDATE uploaded_pdfs SET patient_name = NULL WHERE patient_name = ? AND user_id = ?",
+                (patient_name, user_id)
+            )
+            print(f"Updated PDFs to remove patient_name references to patient {patient_name}")
         
-        # Then delete the patient
+        # Delete the patient record
         cursor.execute(
             "DELETE FROM patients WHERE id = ?",
             (patient_id,)
@@ -576,14 +646,21 @@ def delete_patient(patient_id: int):
         affected_rows = cursor.rowcount
         print(f"Deleted patient {patient_id}, affected rows: {affected_rows}")
         
+        # Commit the changes and close the connection
         conn.commit()
         conn.close()
         
         return {"success": True, "message": f"Patient '{patient_name}' deleted successfully"}
     except Exception as e:
+        # Detailed error logging
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error deleting patient: {str(e)}")
+        print(f"Error details: {error_details}")
+        
         if 'conn' in locals():
             conn.close()
-        print(f"Error deleting patient: {str(e)}")
+        
         raise HTTPException(status_code=500, detail=f"Failed to delete patient: {str(e)}")
 
 # Run the server with uvicorn
