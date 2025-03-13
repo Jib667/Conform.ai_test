@@ -509,6 +509,24 @@
   color: #ffffff;
 }
 
+.footer-section ul li a.active,
+.footer-section ul li a[style*="bold"] {
+  font-weight: bold;
+  color: #4FFFB0;
+  position: relative;
+}
+
+.footer-section ul li a.active:after,
+.footer-section ul li a[style*="bold"]:after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #4FFFB0;
+}
+
 .social-links {
   display: flex;
   gap: 1rem;

@@ -32,16 +32,13 @@
 }
 
 .dashboard-card {
-  background: linear-gradient(135deg, #3B2B6D 0%, #241656 100%);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  color: white;
+  padding: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-height: 300px; /* Set a minimum height to maintain card size */
   display: flex;
   flex-direction: column;
-  min-height: 300px;
 }
 
 .dashboard-card:hover {
@@ -58,12 +55,11 @@
 .empty-state {
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
-  margin: 2rem 0;
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0.5rem;
   font-style: italic;
+  margin: auto 0; /* Center vertically in the available space */
 }
 
 .dashboard-button {
@@ -87,11 +83,13 @@
 .profile-info {
   flex-grow: 1;
   margin-bottom: 1.5rem;
+  color: white;
 }
 
 .profile-info p {
   margin-bottom: 1rem;
   line-height: 1.5;
+  color: white;
 }
 
 .profile-info strong {
@@ -240,4 +238,142 @@
   text-align: center;
   padding: 2rem;
   color: rgba(255, 255, 255, 0.6);
+}
+
+/* Update the form card styling to be more compact */
+.form-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: auto; /* Let it size to content */
+  max-height: 200px; /* Limit the height */
+  display: flex;
+  flex-direction: column;
+}
+
+.form-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.form-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.form-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80%;
+}
+
+.form-card-date {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.25rem;
+}
+
+.form-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.form-card-action {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  padding: 0.25rem;
+}
+
+.form-card-action:hover {
+  opacity: 1;
+}
+
+.form-card-action.edit {
+  color: #4FFFB0;
+}
+
+.form-card-action.delete {
+  color: #ff4f4f;
+}
+
+/* Style the create form card to be more minimal */
+.create-form-card {
+  background: rgba(79, 255, 176, 0.1);
+  border: 1px dashed rgba(79, 255, 176, 0.5);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 120px; /* Fixed height */
+  text-align: center;
+}
+
+.create-form-card:hover {
+  background: rgba(79, 255, 176, 0.15);
+  transform: translateY(-5px);
+}
+
+.create-form-icon {
+  font-size: 3rem;
+  color: #4FFFB0;
+  /* Removed margin-bottom since there's no text */
+}
+
+.dashboard-section h2 {
+  color: white;
+  margin-bottom: 1.5rem;
+  font-size: 1.75rem;
+}
+
+/* Add a specific class for the Recent Forms empty state */
+.recent-forms-empty {
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0.5rem;
+  font-style: italic;
+  margin: 2rem auto auto; /* Move it up by adjusting the top margin */
+}
+
+/* Style for the template create button */
+.template-create-button {
+  background: rgba(79, 255, 176, 0.1);
+  border: 1px dashed rgba(79, 255, 176, 0.5);
+  border-radius: 1rem;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 60px; /* Smaller than the main upload button */
+  text-align: center;
+  margin-top: auto; /* Push it to the bottom of the card */
+}
+
+.template-create-button:hover {
+  background: rgba(79, 255, 176, 0.15);
+  transform: translateY(-5px);
+}
+
+.template-create-icon {
+  font-size: 2rem;
+  color: #4FFFB0;
 } 

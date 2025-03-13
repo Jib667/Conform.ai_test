@@ -3,10 +3,19 @@ import conformLogo from '../assets/conform_logo.png';
 import h2aiLogo from '../assets/h2ai_logo.png';
 import './Dashboard.css';
 import EditProfile from './EditProfile';
+import FormEditor from './FormEditor';
 
-const Dashboard = ({ user, onLogout, onToggleSidebar, onUpdateUser }) => {
+const Dashboard = ({ 
+  user, 
+  onLogout, 
+  onToggleSidebar, 
+  onUpdateUser, 
+  forms, 
+  setForms, 
+  onCreateForm 
+}) => {
   const [showEditProfile, setShowEditProfile] = useState(false);
-  const [forms, setForms] = useState([]);
+  const [showFormEditor, setShowFormEditor] = useState(false);
   
   const handleHomeClick = (e) => {
     e.preventDefault();
@@ -15,15 +24,9 @@ const Dashboard = ({ user, onLogout, onToggleSidebar, onUpdateUser }) => {
   };
   
   const handleCreateForm = () => {
-    // This would typically open a form editor or create a new form
-    const newForm = {
-      id: Date.now(),
-      title: `New Form ${forms.length + 1}`,
-      createdAt: new Date().toISOString(),
-      elements: []
-    };
-    
-    setForms([...forms, newForm]);
+    if (onCreateForm) {
+      onCreateForm();
+    }
   };
   
   const handleEditForm = (formId) => {
@@ -32,7 +35,9 @@ const Dashboard = ({ user, onLogout, onToggleSidebar, onUpdateUser }) => {
   };
   
   const handleDeleteForm = (formId) => {
-    setForms(forms.filter(form => form.id !== formId));
+    if (setForms) {
+      setForms(forms.filter(form => form.id !== formId));
+    }
   };
   
   const handleUpdateSuccess = (updatedUser) => {
@@ -41,6 +46,23 @@ const Dashboard = ({ user, onLogout, onToggleSidebar, onUpdateUser }) => {
       onUpdateUser(updatedUser);
     }
   };
+
+  const handleSaveForm = (newForm) => {
+    setForms([...forms, newForm]);
+    setShowFormEditor(false);
+  };
+
+  if (showFormEditor) {
+    return (
+      <FormEditor 
+        user={user}
+        onLogout={onLogout}
+        onToggleSidebar={onToggleSidebar}
+        onSaveForm={handleSaveForm}
+        onCancel={() => setShowFormEditor(false)}
+      />
+    );
+  }
 
   return (
     <div className="app">
@@ -89,63 +111,57 @@ const Dashboard = ({ user, onLogout, onToggleSidebar, onUpdateUser }) => {
       <main className="dashboard-content">
         <div className="dashboard-header">
           <h1>{user?.name.split(' ')[0]}'s Dashboard</h1>
-          <p>Manage your medical forms and submissions</p>
+          <p>Manage your patient's medical forms and submissions</p>
         </div>
 
-        {/* Form Editor Card */}
-        <div className="form-editor-card">
-          <div className="form-editor-header">
-            <h3>Form Editor</h3>
-            <button 
-              className="form-editor-button"
-              onClick={handleCreateForm}
-            >
-              Create New Form
-            </button>
-          </div>
-          
-          <div className="form-editor-content">
-            {forms.length > 0 ? (
-              <ul className="form-editor-list">
-                {forms.map(form => (
-                  <li key={form.id} className="form-editor-item">
-                    <span className="form-editor-item-title">{form.title}</span>
-                    <div className="form-editor-item-actions">
-                      <button 
-                        className="form-editor-item-button"
-                        onClick={() => handleEditForm(form.id)}
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        className="form-editor-item-button"
-                        onClick={() => handleDeleteForm(form.id)}
-                      >
-                        Delete
-                      </button>
+        <div className="dashboard-section">
+          <h2 style={{ color: 'white' }}>Upload Fillable Form</h2>
+          <div className="forms-grid">
+            <div className="create-form-card" onClick={handleCreateForm}>
+              <div className="create-form-icon">+</div>
+            </div>
+            
+            {forms.map(form => (
+              <div className="form-card" key={form.id}>
+                <div className="form-card-header">
+                  <div>
+                    <h3 className="form-card-title">{form.title}</h3>
+                    <div className="form-card-date">
+                      {new Date(form.createdAt).toLocaleDateString()}
                     </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="form-editor-empty">
-                <p>You haven't created any forms yet. Click "Create New Form" to get started.</p>
+                  </div>
+                  <div className="form-card-actions">
+                    <button 
+                      className="form-card-action edit"
+                      onClick={() => handleEditForm(form.id)}
+                    >
+                      ✎
+                    </button>
+                    <button 
+                      className="form-card-action delete"
+                      onClick={() => handleDeleteForm(form.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
         <div className="dashboard-grid">
           <div className="dashboard-card">
             <h2>Recent Forms</h2>
-            <p className="empty-state">No forms submitted yet</p>
-            <button className="dashboard-button">Submit New Form</button>
+            <p className="recent-forms-empty">No forms submitted yet</p>
           </div>
 
           <div className="dashboard-card">
-            <h2>Saved Templates</h2>
-            <p className="empty-state">No templates saved</p>
-            <button className="dashboard-button">Create Template</button>
+            <h2>Upload Template</h2>
+            <div className="empty-state">No templates displayed</div>
+            <div className="template-create-button" onClick={() => console.log('Create template')}>
+              <div className="template-create-icon">+</div>
+            </div>
           </div>
 
           <div className="dashboard-card">
@@ -179,7 +195,21 @@ const Dashboard = ({ user, onLogout, onToggleSidebar, onUpdateUser }) => {
             <h4>Pages</h4>
             <ul>
               <li><a href="/" onClick={handleHomeClick}>Home</a></li>
-              <li><a href="/dashboard">Dashboard</a></li>
+              <li><a href="/dashboard" style={{ fontWeight: 'bold', color: '#4FFFB0' }}>Dashboard</a></li>
+              <li>
+                <a 
+                  href="/form-editor" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onCreateForm) {
+                      onCreateForm();
+                    }
+                  }}
+                  style={{ display: 'block', padding: '5px 0' }}
+                >
+                  Form Editor
+                </a>
+              </li>
             </ul>
           </div>
           <div className="footer-section">

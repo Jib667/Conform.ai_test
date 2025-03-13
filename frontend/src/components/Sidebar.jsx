@@ -3,6 +3,9 @@ import './Sidebar.css';
 import conformLogo from '../assets/conform_logo.png';
 
 const Sidebar = ({ isOpen, onClose, user, onNavigate, handleDashboardClick }) => {
+  // Determine the current page based on URL
+  const currentPath = window.location.pathname;
+  
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}></div>
@@ -16,11 +19,12 @@ const Sidebar = ({ isOpen, onClose, user, onNavigate, handleDashboardClick }) =>
         </div>
         
         <div className="sidebar-content">
-          <h3 className="sidebar-title">Pages</h3>
+          <h3 className="sidebar-title">Navigation</h3>
           <ul className="sidebar-menu">
             <li className="sidebar-menu-item">
               <a 
                 href="/" 
+                className={currentPath === '/' ? 'active' : ''}
                 onClick={(e) => {
                   e.preventDefault();
                   onNavigate('home');
@@ -33,13 +37,14 @@ const Sidebar = ({ isOpen, onClose, user, onNavigate, handleDashboardClick }) =>
             <li className="sidebar-menu-item">
               <a 
                 href="/dashboard" 
+                className={currentPath === '/dashboard' ? 'active' : ''}
                 onClick={(e) => {
                   if (user) {
                     e.preventDefault();
                     onNavigate('dashboard');
                     onClose();
                   } else {
-                    handleDashboardClick(e);
+                    handleDashboardClick(e, 'dashboard');
                     onClose();
                   }
                 }}
@@ -47,6 +52,27 @@ const Sidebar = ({ isOpen, onClose, user, onNavigate, handleDashboardClick }) =>
                 Dashboard
               </a>
             </li>
+            <li className="sidebar-menu-item">
+              <a 
+                href="/form-editor" 
+                className={currentPath === '/form-editor' ? 'active' : ''}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (user) {
+                    onNavigate('form-editor');
+                  } else {
+                    handleDashboardClick(e, 'form editor');
+                  }
+                  onClose();
+                }}
+              >
+                Form Editor
+              </a>
+            </li>
+          </ul>
+          
+          <h3 className="sidebar-title" style={{ marginTop: '2rem' }}>More Information</h3>
+          <ul className="sidebar-menu">
             <li className="sidebar-menu-item">
               <a href="#">Features</a>
             </li>

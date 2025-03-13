@@ -24,6 +24,7 @@ import Carousel from './components/Carousel'
 import SignUp from './components/SignUp'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
+import FormEditor from './components/FormEditor'
 import Sidebar from './components/Sidebar'
 import { useEffect, useState } from 'react'
 
@@ -35,6 +36,9 @@ function App() {
   const [showDashboard, setShowDashboard] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [loginPromptMessage, setLoginPromptMessage] = useState('');
+  const [showFormEditor, setShowFormEditor] = useState(false);
+  const [forms, setForms] = useState([]);
   
   const carouselImages = [
     carousel1, carousel2, carousel3, carousel4,
@@ -74,6 +78,7 @@ function App() {
     const handlePopState = () => {
       if (window.location.pathname === '/' && user) {
         setShowDashboard(false);
+        setShowFormEditor(false);
       }
     };
 
@@ -93,26 +98,35 @@ function App() {
     setUser(userData);
     setShowLogin(false);
     setShowDashboard(true);
+    setShowFormEditor(false);
   };
 
   const handleLogout = () => {
     setUser(null);
     setShowDashboard(false);
+    setShowFormEditor(false);
   };
 
   const handleNavigate = (page) => {
     if (page === 'home') {
       setShowDashboard(false);
+      setShowFormEditor(false);
       window.history.pushState({}, '', '/');
     } else if (page === 'dashboard' && user) {
       setShowDashboard(true);
+      setShowFormEditor(false);
       window.history.pushState({}, '', '/dashboard');
+    } else if (page === 'form-editor' && user) {
+      setShowDashboard(true);
+      setShowFormEditor(true);
+      window.history.pushState({}, '', '/form-editor');
     }
   };
 
-  const handleDashboardClick = (e) => {
+  const handleDashboardClick = (e, page = 'dashboard') => {
     if (!user) {
       e.preventDefault();
+      setLoginPromptMessage(`Please log in to access the ${page}`);
       setShowLoginPrompt(true);
       setTimeout(() => setShowLoginPrompt(false), 3000);
     }
@@ -122,6 +136,34 @@ function App() {
     setUser(updatedUser);
   };
 
+  const handleSaveForm = (newForm) => {
+    setForms([...forms, newForm]);
+    setShowFormEditor(false);
+  };
+
+  // Render the Form Editor if it's active
+  if (user && showFormEditor) {
+    return (
+      <>
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)} 
+          user={user}
+          onNavigate={handleNavigate}
+          handleDashboardClick={handleDashboardClick}
+        />
+        <FormEditor 
+          user={user}
+          onLogout={handleLogout}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onSaveForm={handleSaveForm}
+          onCancel={() => setShowFormEditor(false)}
+        />
+      </>
+    );
+  }
+
+  // Render the Dashboard if it's active
   if (showDashboard && user) {
     return (
       <>
@@ -137,11 +179,15 @@ function App() {
           onLogout={handleLogout} 
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           onUpdateUser={handleUpdateUser}
+          forms={forms}
+          setForms={setForms}
+          onCreateForm={() => setShowFormEditor(true)}
         />
       </>
     );
   }
 
+  // Render the home page
   return (
     <div className="app">
       <Sidebar 
@@ -277,6 +323,7 @@ function App() {
                     e.preventDefault(); 
                     window.history.pushState({}, '', '/');
                     setShowDashboard(false); 
+                    setShowFormEditor(false);
                   }}
                 >
                   Home
@@ -285,9 +332,28 @@ function App() {
               <li>
                 <a 
                   href="/dashboard" 
-                  onClick={handleDashboardClick}
+                  onClick={(e) => handleDashboardClick(e, 'dashboard')}
                 >
                   Dashboard
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/form-editor" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (user) {
+                      setShowDashboard(true);
+                      setShowFormEditor(true);
+                      window.history.pushState({}, '', '/form-editor');
+                    } else {
+                      setLoginPromptMessage('Please log in to access the form editor');
+                      setShowLoginPrompt(true);
+                      setTimeout(() => setShowLoginPrompt(false), 3000);
+                    }
+                  }}
+                >
+                  Form Editor
                 </a>
               </li>
             </ul>
@@ -336,7 +402,7 @@ function App() {
 
       {showLoginPrompt && (
         <div className="login-prompt">
-          <p>Please log in to access the dashboard</p>
+          <p>{loginPromptMessage}</p>
         </div>
       )}
     </div>

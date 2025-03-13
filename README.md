@@ -8,11 +8,18 @@ A web application for streamlining medical form filling and processing.
 - Error prevention through real-time validation
 - Time-saving dashboard for all patient forms
 - User registration system for healthcare professionals
+- Form Editor for creating custom medical forms
 
 ## Project Structure
 
 - `frontend/`: React-based frontend application with Vite
 - `backend/`: Python FastAPI backend with SQLite database
+
+## Pages
+
+- **Home**: Landing page with product information
+- **Dashboard**: User dashboard to manage forms and profile
+- **Form Editor**: Create and edit custom medical forms
 
 ## Setup Instructions
 
@@ -90,6 +97,15 @@ A web application for streamlining medical form filling and processing.
 ### Important Note
 
 Both the frontend and backend servers need to be running simultaneously for the application to work properly. The frontend Vite server is configured to proxy API requests to the backend server.
+
+## Form Editor Functionality
+
+The application includes a Form Editor that allows users to:
+- Create custom medical forms
+- Add various field types (text, select, checkbox, radio)
+- Set required fields
+- Preview forms before saving
+- Edit existing forms
 
 ## Sign-Up Functionality
 
