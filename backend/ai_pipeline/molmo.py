@@ -2,7 +2,6 @@ import os
 import logging
 from datetime import datetime
 import warnings
-
 import cv2
 import requests
 import re
@@ -17,12 +16,7 @@ from transformers import (
    GenerationConfig,
    BitsAndBytesConfig,
 )
-import torch
 
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
-else:
-    device = torch.device("cpu")
 
 os.makedirs("Molmo_pts", exist_ok=True)
 
@@ -139,7 +133,7 @@ if __name__ == '__main__':
     image = read_image(img_path)
 
     model, processor = load_model(
-        model_id, quant_config=None, dtype="auto", device=device
+        model_id, quant_config=None, dtype="auto"
     )
 
 
