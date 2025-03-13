@@ -531,6 +531,61 @@ async def assign_patient_to_pdf(pdf_id: int, request: Request):
         print(f"Error assigning patient to PDF: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to assign patient: {str(e)}")
 
+# Delete a patient
+@app.delete("/api/patients/{patient_id}")
+def delete_patient(patient_id: int):
+    try:
+        # Create a new database connection for this request
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # First, get the patient info for logging
+        cursor.execute(
+            "SELECT name, user_id FROM patients WHERE id = ?",
+            (patient_id,)
+        )
+        patient_info = cursor.fetchone()
+        
+        if not patient_info:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        patient_name, user_id = patient_info
+        print(f"Deleting patient: {patient_name} (ID: {patient_id}) for user {user_id}")
+        
+        # Update any PDFs that reference this patient to remove the reference
+        cursor.execute(
+            "UPDATE uploaded_pdfs SET patient_id = NULL, patient_name = NULL WHERE patient_id = ?",
+            (patient_id,)
+        )
+        
+        # Also update PDFs that might have the patient name but not the ID
+        cursor.execute(
+            "UPDATE uploaded_pdfs SET patient_name = NULL WHERE patient_name = ? AND user_id = ?",
+            (patient_name, user_id)
+        )
+        
+        print(f"Updated PDFs to remove references to patient {patient_id}")
+        
+        # Then delete the patient
+        cursor.execute(
+            "DELETE FROM patients WHERE id = ?",
+            (patient_id,)
+        )
+        
+        affected_rows = cursor.rowcount
+        print(f"Deleted patient {patient_id}, affected rows: {affected_rows}")
+        
+        conn.commit()
+        conn.close()
+        
+        return {"success": True, "message": f"Patient '{patient_name}' deleted successfully"}
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        print(f"Error deleting patient: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete patient: {str(e)}")
+
 # Run the server with uvicorn
 if __name__ == "__main__":
     import uvicorn

@@ -911,7 +911,7 @@
 
 .patient-item {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: auto 2fr 1fr 1fr;
   align-items: center;
   gap: 1rem;
   background: rgba(255, 255, 255, 0.05);
@@ -930,9 +930,20 @@
 }
 
 .patient-form-count {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
+  color: white;
+  font-size: 0.95rem;
   text-align: center;
+  background: rgba(79, 255, 176, 0.1);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(79, 255, 176, 0.2);
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto; /* Center the element horizontally in its grid cell */
+  width: fit-content; /* Make the width fit the content */
+  max-width: 100%; /* Ensure it doesn't overflow */
 }
 
 .patient-forms-dropdown {
@@ -986,17 +997,31 @@
   font-size: 0.8rem;
 }
 
+.dropdown-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .dropdown-form-action {
   background: none;
   border: none;
-  color: #4FFFB0;
   cursor: pointer;
   opacity: 0.7;
   transition: opacity 0.2s;
+  padding: 0.25rem;
+  font-size: 1rem;
 }
 
 .dropdown-form-action:hover {
   opacity: 1;
+}
+
+.dropdown-form-action.edit {
+  color: #4FFFB0;
+}
+
+.dropdown-form-action.delete {
+  color: #ff4f4f;
 }
 
 .dropdown-empty {
@@ -1033,4 +1058,88 @@
   .patient-manager-card {
     grid-column: 1;
   }
+}
+
+/* Update the patient expand button styling */
+.patient-expand-button {
+  background: rgba(233, 216, 253, 0.1);
+  border: 1px solid rgba(233, 216, 253, 0.3);
+  color: #E9D8FD;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.patient-expand-button:hover {
+  background: rgba(233, 216, 253, 0.2);
+}
+
+/* Update the patient info modal to match the all forms styling */
+.patient-info-modal {
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.patient-info-section {
+  margin-bottom: 2rem;
+}
+
+.patient-info-section h4 {
+  font-size: 1.25rem;
+  color: #4FFFB0;
+  margin-bottom: 1rem;
+}
+
+/* Remove the patient-forms-list styles since we're using all-forms-list */
+.patient-forms-list {
+  display: none;
+}
+
+/* Ensure the all-forms-list in the patient modal has the right styling */
+.patient-info-modal .all-forms-list {
+  max-height: 350px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.patient-info-modal .all-forms-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.patient-info-modal .all-forms-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.patient-info-modal .all-forms-list::-webkit-scrollbar-thumb {
+  background: rgba(79, 255, 176, 0.3);
+  border-radius: 4px;
+}
+
+.patient-info-modal .all-forms-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 255, 176, 0.5);
+}
+
+.patient-additional-info {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+}
+
+.patient-info-placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+  text-align: center;
+  margin: 0;
+}
+
+.patient-info-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
 } 

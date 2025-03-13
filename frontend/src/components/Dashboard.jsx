@@ -33,6 +33,9 @@ const Dashboard = ({
   const [formToEdit, setFormToEdit] = useState(null);
   const fileInputRef = useRef(null);
   const [isLoadingForms, setIsLoadingForms] = useState(false);
+  const [expandedPatient, setExpandedPatient] = useState(null);
+  const [showDeletePatientConfirm, setShowDeletePatientConfirm] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState(null);
   
   // Fetch user's PDFs on component mount
   useEffect(() => {
@@ -422,10 +425,10 @@ const Dashboard = ({
         });
       }
       
-      // Show success message (timeout will be handled by the useEffect)
-      setUploadSuccess(`Form assigned to ${patientName}`);
+      // After successfully assigning a patient, refresh the PDFs list to get updated patient info
+      await fetchUserPdfs();
       
-      // Close the popup
+      // Close the patient assignment popup
       setShowPatientAssignmentPopup(false);
       setSelectedPatient('');
       setNewPatient('');
@@ -451,6 +454,58 @@ const Dashboard = ({
     setShowPatientAssignmentPopup(false);
     setSelectedPatient('');
     setNewPatient('');
+  };
+
+  const handleDeletePatient = (patientId) => {
+    setPatientToDelete(patientId);
+    setShowDeletePatientConfirm(true);
+  };
+
+  const confirmDeletePatient = async () => {
+    if (!patientToDelete) return;
+    
+    try {
+      console.log(`Deleting patient with ID: ${patientToDelete}`);
+      
+      const response = await fetch(`/api/patients/${patientToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to delete patient');
+      }
+      
+      const data = await response.json();
+      console.log('Delete patient response:', data);
+      
+      // Remove the patient from the patients state
+      setPatients(patients.filter(patient => patient.id !== patientToDelete));
+      
+      // Close the delete confirmation and patient info popup
+      setShowDeletePatientConfirm(false);
+      setExpandedPatient(null);
+      
+      // Show success message
+      setUploadSuccess(data.message || 'Patient deleted successfully');
+      setTimeout(() => setUploadSuccess(''), 3000);
+      
+      // Refresh the PDFs list to update any references to the deleted patient
+      fetchUserPdfs();
+      
+    } catch (error) {
+      console.error('Error deleting patient:', error);
+      setUploadError(`Failed to delete patient: ${error.message}`);
+      setTimeout(() => setUploadError(''), 5000);
+    }
+  };
+
+  const cancelDeletePatient = () => {
+    setShowDeletePatientConfirm(false);
+    setPatientToDelete(null);
   };
 
   if (showFormEditor) {
@@ -666,6 +721,12 @@ const Dashboard = ({
                   
                   return (
                     <div className="patient-item" key={patient.id}>
+                      <button 
+                        className="patient-expand-button"
+                        onClick={() => setExpandedPatient(patient)}
+                      >
+                        Expand
+                      </button>
                       <div className="patient-name">{patient.name}</div>
                       <div className="patient-form-count">{patientForms.length} forms</div>
                       <div className="patient-forms-dropdown">
@@ -682,12 +743,26 @@ const Dashboard = ({
                                 <span className="dropdown-form-date">
                                   {new Date(form.uploadDate).toLocaleDateString()}
                                 </span>
-                                <button 
-                                  className="dropdown-form-action"
-                                  onClick={() => handleEditForm(form.id)}
-                                >
-                                  ✎
-                                </button>
+                                <div className="dropdown-form-actions">
+                                  <button 
+                                    className="dropdown-form-action edit"
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // Prevent dropdown from closing
+                                      handleEditForm(form.id);
+                                    }}
+                                  >
+                                    ✎
+                                  </button>
+                                  <button 
+                                    className="dropdown-form-action delete"
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // Prevent dropdown from closing
+                                      handleDeletePdf(form.id);
+                                    }}
+                                  >
+                                    −
+                                  </button>
+                                </div>
                               </div>
                             ))
                           ) : (
@@ -921,6 +996,121 @@ const Dashboard = ({
                   onClick={handleAssignPatient}
                 >
                   Assign & Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Information Popup */}
+      {expandedPatient && (
+        <div className="modal-overlay" onClick={() => setExpandedPatient(null)}>
+          <div className="modal-content patient-info-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{expandedPatient.name}</h2>
+              <button className="modal-close" onClick={() => setExpandedPatient(null)}>×</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="patient-info-section">
+                <h4>Patient Forms</h4>
+                
+                {/* Get forms for this patient */}
+                {(() => {
+                  const patientForms = userPdfs.filter(pdf => 
+                    pdf.patientId === expandedPatient.id || 
+                    (pdf.patientName && pdf.patientName === expandedPatient.name)
+                  );
+                  
+                  return patientForms.length > 0 ? (
+                    <div className="all-forms-list">
+                      {patientForms.map(form => (
+                        <div className="all-forms-item" key={form.id}>
+                          <div className="all-forms-item-left">
+                            <div className="all-forms-name-container">
+                              <span className="all-forms-name">{form.originalFilename}</span>
+                            </div>
+                            <span className="all-forms-date">
+                              {new Date(form.uploadDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="all-forms-actions">
+                            <button 
+                              className="form-card-action edit"
+                              onClick={() => handleEditForm(form.id)}
+                            >
+                              ✎
+                            </button>
+                            <button 
+                              className="form-card-action delete"
+                              onClick={() => handleDeletePdf(form.id)}
+                            >
+                              −
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="all-forms-empty">No forms assigned to this patient</div>
+                  );
+                })()}
+              </div>
+              
+              <div className="patient-info-section">
+                <h4>Additional Information</h4>
+                <div className="patient-additional-info">
+                  <p className="patient-info-placeholder">
+                    Additional patient information will be available here in future updates.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="patient-info-actions">
+              <button 
+                className="dashboard-button secondary"
+                onClick={() => setExpandedPatient(null)}
+              >
+                Close
+              </button>
+              <button 
+                className="dashboard-button delete-button"
+                onClick={() => handleDeletePatient(expandedPatient.id)}
+              >
+                Delete Patient
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Patient Confirmation Modal */}
+      {showDeletePatientConfirm && (
+        <div className="modal-overlay" onClick={cancelDeletePatient}>
+          <div className="modal-content delete-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirm Delete Patient</h2>
+              <button className="modal-close" onClick={cancelDeletePatient}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="delete-confirm-message">
+                Are you sure you want to delete this patient? This will remove the patient from all forms.
+                This action cannot be undone.
+              </p>
+              <div className="delete-confirm-actions">
+                <button 
+                  className="dashboard-button secondary"
+                  onClick={cancelDeletePatient}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="dashboard-button delete-button"
+                  onClick={confirmDeletePatient}
+                >
+                  Delete
                 </button>
               </div>
             </div>
