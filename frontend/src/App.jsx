@@ -27,6 +27,7 @@ import Dashboard from './components/Dashboard'
 import FormEditor from './components/FormEditor'
 import Sidebar from './components/Sidebar'
 import { useEffect, useState } from 'react'
+import { scrollToTop } from './utils/scrollUtils'
 
 function App() {
   const [showPopups, setShowPopups] = useState(true);
@@ -75,16 +76,106 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const handlePopState = () => {
-      if (window.location.pathname === '/' && user) {
-        setShowDashboard(false);
-        setShowFormEditor(false);
+    const handleRouteChange = () => {
+      const path = window.location.pathname;
+      
+      if (user) {
+        if (path === '/') {
+          setShowDashboard(false);
+          setShowFormEditor(false);
+        } else if (path === '/dashboard') {
+          setShowDashboard(true);
+          setShowFormEditor(false);
+        } else if (path === '/form-editor') {
+          setShowFormEditor(true);
+          setShowDashboard(false);
+        }
+      } else {
+        if (path === '/dashboard' || path === '/form-editor') {
+          window.history.pushState({}, '', '/');
+          setShowLoginPrompt(true);
+          setLoginPromptMessage(`Please log in to access this page`);
+          setTimeout(() => setShowLoginPrompt(false), 3000);
+        }
       }
+      
+      scrollToTop();
     };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    
+    handleRouteChange();
+    
+    window.addEventListener('popstate', handleRouteChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+    };
   }, [user]);
+
+  useEffect(() => {
+    // Listen for page load events
+    const handleLoad = () => {
+      const path = window.location.pathname;
+      
+      // Check if user is logged in from localStorage
+      const savedUser = localStorage.getItem('user');
+      
+      if (savedUser) {
+        try {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          
+          // Set the appropriate view based on the path
+          if (path === '/dashboard') {
+            setShowDashboard(true);
+            setShowFormEditor(false);
+          } else if (path === '/form-editor') {
+            setShowFormEditor(true);
+            setShowDashboard(false);
+          }
+        } catch (error) {
+          console.error('Error parsing saved user:', error);
+        }
+      }
+      
+      // Force scroll to top
+      window.scrollTo(0, 0);
+    };
+    
+    // Call once on mount
+    handleLoad();
+    
+    // Add event listener for page loads
+    window.addEventListener('load', handleLoad);
+    
+    return () => {
+      window.removeEventListener('load', handleLoad);
+    };
+  }, []);
+
+  useEffect(() => {
+    const redirectTo = sessionStorage.getItem('redirectTo');
+    if (redirectTo) {
+      sessionStorage.removeItem('redirectTo');
+      
+      // Check if user is logged in
+      const savedUser = localStorage.getItem('user');
+      if (savedUser && redirectTo === '/dashboard') {
+        setUser(JSON.parse(savedUser));
+        setShowDashboard(true);
+        setShowFormEditor(false);
+        window.history.pushState({}, '', '/dashboard');
+        // Force scroll to top immediately
+        window.scrollTo(0, 0);
+      } else if (savedUser && redirectTo === '/form-editor') {
+        setUser(JSON.parse(savedUser));
+        setShowFormEditor(true);
+        setShowDashboard(false);
+        window.history.pushState({}, '', '/form-editor');
+        // Force scroll to top immediately
+        window.scrollTo(0, 0);
+      }
+    }
+  }, []);
 
   const handleSignUpClick = () => {
     setShowSignUp(true);
@@ -96,31 +187,33 @@ function App() {
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
+    // Save user to localStorage
+    localStorage.setItem('user', JSON.stringify(userData));
     setShowLogin(false);
     setShowDashboard(true);
     setShowFormEditor(false);
+    window.history.pushState({}, '', '/dashboard');
   };
 
   const handleLogout = () => {
     setUser(null);
+    // Clear user from localStorage
+    localStorage.removeItem('user');
     setShowDashboard(false);
     setShowFormEditor(false);
+    window.history.pushState({}, '', '/');
   };
 
-  const handleNavigate = (page) => {
-    if (page === 'home') {
-      setShowDashboard(false);
-      setShowFormEditor(false);
-      window.history.pushState({}, '', '/');
-    } else if (page === 'dashboard' && user) {
-      setShowDashboard(true);
-      setShowFormEditor(false);
-      window.history.pushState({}, '', '/dashboard');
-    } else if (page === 'form-editor' && user) {
-      setShowDashboard(true);
-      setShowFormEditor(true);
-      window.history.pushState({}, '', '/form-editor');
+  const handleNavigate = (path) => {
+    if (!user && (path === '/dashboard' || path === '/form-editor')) {
+      setLoginPromptMessage(`Please log in to access this page`);
+      setShowLoginPrompt(true);
+      setTimeout(() => setShowLoginPrompt(false), 3000);
+      return;
     }
+    
+    window.history.pushState({}, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const handleDashboardClick = (e, page = 'dashboard') => {
@@ -129,6 +222,9 @@ function App() {
       setLoginPromptMessage(`Please log in to access the ${page}`);
       setShowLoginPrompt(true);
       setTimeout(() => setShowLoginPrompt(false), 3000);
+    } else {
+      window.history.pushState({}, '', '/dashboard');
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
 
@@ -139,9 +235,32 @@ function App() {
   const handleSaveForm = (newForm) => {
     setForms([...forms, newForm]);
     setShowFormEditor(false);
+    setShowDashboard(true);
+    window.history.pushState({}, '', '/dashboard');
   };
 
-  // Render the Form Editor if it's active
+  const handleCreateForm = () => {
+    if (user) {
+      setShowFormEditor(true);
+      setShowDashboard(false);
+      window.history.pushState({}, '', '/form-editor');
+      // Force scroll to top immediately
+      window.scrollTo(0, 0);
+    } else {
+      setLoginPromptMessage('Please log in to create a form');
+      setShowLoginPrompt(true);
+      setTimeout(() => setShowLoginPrompt(false), 3000);
+    }
+  };
+
+  const handleFormEditorToDashboard = () => {
+    setShowFormEditor(false);
+    setShowDashboard(true);
+    window.history.pushState({}, '', '/dashboard');
+    // Force scroll to top immediately
+    window.scrollTo(0, 0);
+  };
+
   if (user && showFormEditor) {
     return (
       <>
@@ -157,14 +276,15 @@ function App() {
           onLogout={handleLogout}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           onSaveForm={handleSaveForm}
-          onCancel={() => setShowFormEditor(false)}
+          onCancel={handleFormEditorToDashboard}
+          form={null}
+          navigateToDashboard={handleFormEditorToDashboard}
         />
       </>
     );
   }
 
-  // Render the Dashboard if it's active
-  if (showDashboard && user) {
+  if (user && showDashboard) {
     return (
       <>
         <Sidebar 
@@ -176,18 +296,17 @@ function App() {
         />
         <Dashboard 
           user={user} 
-          onLogout={handleLogout} 
+          onLogout={handleLogout}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           onUpdateUser={handleUpdateUser}
           forms={forms}
           setForms={setForms}
-          onCreateForm={() => setShowFormEditor(true)}
+          onCreateForm={handleCreateForm}
         />
       </>
     );
   }
 
-  // Render the home page
   return (
     <div className="app">
       <Sidebar 

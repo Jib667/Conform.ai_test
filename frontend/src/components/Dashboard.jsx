@@ -4,6 +4,7 @@ import h2aiLogo from '../assets/h2ai_logo.png';
 import './Dashboard.css';
 import EditProfile from './EditProfile';
 import FormEditor from './FormEditor';
+import { scrollToTop } from '../utils/scrollUtils';
 
 const Dashboard = ({ 
   user, 
@@ -24,6 +25,7 @@ const Dashboard = ({
   const [showAllForms, setShowAllForms] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pdfToDelete, setPdfToDelete] = useState(null);
+  const [currentFormId, setCurrentFormId] = useState(null);
   const fileInputRef = useRef(null);
   
   // Fetch user's PDFs on component mount
@@ -49,6 +51,7 @@ const Dashboard = ({
     e.preventDefault();
     window.history.pushState({}, '', '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
+    scrollToTop();
   };
   
   const handleCreateForm = () => {
@@ -56,6 +59,7 @@ const Dashboard = ({
     setLastUploadedPdf(null);
     // Trigger file input click
     fileInputRef.current.click();
+    scrollToTop();
   };
   
   const handleFileChange = async (e) => {
@@ -148,8 +152,40 @@ const Dashboard = ({
   };
   
   const handleEditForm = (formId) => {
-    // This would open the form editor for the selected form
-    console.log(`Editing form ${formId}`);
+    // Find the PDF information from userPdfs
+    const pdfToEdit = userPdfs.find(pdf => pdf.id === formId);
+    
+    if (pdfToEdit) {
+      // Create a form object with the PDF information
+      const formData = {
+        id: pdfToEdit.id,
+        title: pdfToEdit.originalFilename.replace('.pdf', ''),
+        createdAt: pdfToEdit.uploadDate,
+        pdfUrl: pdfToEdit.url
+      };
+      
+      // Set the form to be edited
+      if (setForms) {
+        // Add the form to the forms list if it's not already there
+        const formExists = forms.some(form => form.id === formData.id);
+        if (!formExists) {
+          setForms([formData, ...forms]);
+        }
+      }
+      
+      // Open the form editor
+      setShowFormEditor(true);
+      
+      // Store the current form ID for the editor to use
+      setCurrentFormId(formData.id);
+      
+      // Scroll to top
+      scrollToTop();
+    } else {
+      console.error(`Form with ID ${formId} not found`);
+      setUploadError('Form not found');
+      setTimeout(() => setUploadError(''), 3000);
+    }
   };
   
   const handleDeleteForm = (formId) => {
@@ -224,13 +260,20 @@ const Dashboard = ({
   };
 
   if (showFormEditor) {
+    // Find the form to edit
+    const formToEdit = currentFormId ? forms.find(form => form.id === currentFormId) : null;
+    
     return (
       <FormEditor 
         user={user}
         onLogout={onLogout}
         onToggleSidebar={onToggleSidebar}
         onSaveForm={handleSaveForm}
-        onCancel={() => setShowFormEditor(false)}
+        onCancel={() => {
+          setShowFormEditor(false);
+          setCurrentFormId(null);
+        }}
+        form={formToEdit} // Pass the form to edit
       />
     );
   }
@@ -429,8 +472,26 @@ const Dashboard = ({
           <div className="footer-section">
             <h4>Pages</h4>
             <ul>
-              <li><a href="/" onClick={handleHomeClick}>Home</a></li>
-              <li><a href="/dashboard" style={{ fontWeight: 'bold', color: '#4FFFB0' }}>Dashboard</a></li>
+              <li>
+                <a 
+                  href="/" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // Force navigation to home page
+                    window.location.href = '/';
+                  }}
+                >
+                  Home
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/dashboard" 
+                  style={{ fontWeight: 'bold', color: '#4FFFB0' }}
+                >
+                  Dashboard
+                </a>
+              </li>
               <li>
                 <a 
                   href="/form-editor" 
@@ -440,7 +501,6 @@ const Dashboard = ({
                       onCreateForm();
                     }
                   }}
-                  style={{ display: 'block', padding: '5px 0' }}
                 >
                   Form Editor
                 </a>

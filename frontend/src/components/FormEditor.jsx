@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './FormEditor.css';
 import conformLogo from '../assets/conform_logo.png';
 import h2aiLogo from '../assets/h2ai_logo.png';
+import { scrollToTop } from '../utils/scrollUtils';
 
-const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) => {
+const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel, form, navigateToDashboard }) => {
   const [formElements, setFormElements] = useState([]);
   const [currentElement, setCurrentElement] = useState({
     type: 'text',
@@ -15,6 +16,16 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) =
   const [showElementForm, setShowElementForm] = useState(false);
   const [editingIndex, setEditingIndex] = useState(-1);
   const [newOption, setNewOption] = useState('');
+  const [formTitle, setFormTitle] = useState(form ? form.title : 'New Form');
+  const [pdfUrl, setPdfUrl] = useState(form ? form.pdfUrl : '');
+
+  useEffect(() => {
+    // Update state when form prop changes
+    if (form) {
+      setFormTitle(form.title);
+      setPdfUrl(form.pdfUrl);
+    }
+  }, [form]);
 
   const handleHomeClick = (e) => {
     e.preventDefault();
@@ -84,16 +95,24 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) =
     });
   };
 
-  const handleSaveForm = () => {
+  const handleSave = () => {
     const newForm = {
-      id: Date.now(),
-      title: `New Form ${Date.now()}`,
-      createdAt: new Date().toISOString(),
+      id: form ? form.id : Date.now(),
+      title: formTitle,
+      createdAt: form ? form.createdAt : new Date().toISOString(),
+      pdfUrl: pdfUrl,
       elements: formElements
     };
     
-    if (onSaveForm) {
-      onSaveForm(newForm);
+    onSaveForm(newForm);
+  };
+
+  const handleDashboardClick = (e) => {
+    e.preventDefault();
+    if (navigateToDashboard) {
+      navigateToDashboard();
+    } else {
+      onCancel();
     }
   };
 
@@ -156,7 +175,7 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) =
               </button>
               <button 
                 className="form-editor-button"
-                onClick={handleSaveForm}
+                onClick={handleSave}
               >
                 Save Form
               </button>
@@ -395,7 +414,7 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) =
             </button>
             <button 
               className="form-editor-button"
-              onClick={handleSaveForm}
+              onClick={handleSave}
             >
               Save Form
             </button>
@@ -420,8 +439,8 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) =
                   href="/" 
                   onClick={(e) => {
                     e.preventDefault();
-                    window.history.pushState({}, '', '/');
-                    window.dispatchEvent(new PopStateEvent('popstate'));
+                    // Force navigation to home page
+                    window.location.href = '/';
                   }}
                 >
                   Home
@@ -432,13 +451,21 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel }) =
                   href="/dashboard" 
                   onClick={(e) => {
                     e.preventDefault();
-                    onCancel();
+                    // Force navigation to dashboard
+                    window.location.href = '/dashboard';
                   }}
                 >
                   Dashboard
                 </a>
               </li>
-              <li><a href="/form-editor" style={{ fontWeight: 'bold', color: '#4FFFB0' }}>Form Editor</a></li>
+              <li>
+                <a 
+                  href="/form-editor" 
+                  style={{ fontWeight: 'bold', color: '#4FFFB0' }}
+                >
+                  Form Editor
+                </a>
+              </li>
             </ul>
           </div>
           <div className="footer-section">

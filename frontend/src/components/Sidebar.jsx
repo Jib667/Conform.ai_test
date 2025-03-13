@@ -1,6 +1,7 @@
 import React from 'react';
 import './Sidebar.css';
 import conformLogo from '../assets/conform_logo.png';
+import { scrollToTop } from '../utils/scrollUtils';
 
 const Sidebar = ({ isOpen, onClose, user, onNavigate, handleDashboardClick }) => {
   // Determine the current page based on URL
@@ -27,7 +28,7 @@ const Sidebar = ({ isOpen, onClose, user, onNavigate, handleDashboardClick }) =>
                 className={currentPath === '/' ? 'active' : ''}
                 onClick={(e) => {
                   e.preventDefault();
-                  onNavigate('home');
+                  onNavigate('/');
                   onClose();
                 }}
               >
@@ -39,14 +40,13 @@ const Sidebar = ({ isOpen, onClose, user, onNavigate, handleDashboardClick }) =>
                 href="/dashboard" 
                 className={currentPath === '/dashboard' ? 'active' : ''}
                 onClick={(e) => {
+                  e.preventDefault();
                   if (user) {
-                    e.preventDefault();
-                    onNavigate('dashboard');
-                    onClose();
+                    onNavigate('/dashboard');
                   } else {
                     handleDashboardClick(e, 'dashboard');
-                    onClose();
                   }
+                  onClose();
                 }}
               >
                 Dashboard
@@ -59,7 +59,7 @@ const Sidebar = ({ isOpen, onClose, user, onNavigate, handleDashboardClick }) =>
                 onClick={(e) => {
                   e.preventDefault();
                   if (user) {
-                    onNavigate('form-editor');
+                    onNavigate('/form-editor');
                   } else {
                     handleDashboardClick(e, 'form editor');
                   }
