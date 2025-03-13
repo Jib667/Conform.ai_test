@@ -15,7 +15,7 @@ from transformers import (
    AutoModelForCausalLM,
    AutoProcessor,
    GenerationConfig,
-   # BitsAndBytesConfig,
+   BitsAndBytesConfig,
 )
 import torch
 
@@ -33,9 +33,9 @@ def read_image(path):
    return rgb_image
 
 
-# quant_config = BitsAndBytesConfig(
-#     load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=False
-# )
+quant_config = BitsAndBytesConfig(
+    load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=False
+)
 def load_model(
     model_id: str, quant_config, dtype="auto", device="cuda"
 ):
@@ -48,7 +48,8 @@ def load_model(
         trust_remote_code=True,
         torch_dtype=dtype,
         device_map=device,
-        # quantization_config=quant_config,
+        use_safetensors=True
+        quantization_config=quant_config,
     )
     return model, processor
 
