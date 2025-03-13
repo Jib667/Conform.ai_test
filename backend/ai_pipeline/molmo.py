@@ -48,7 +48,7 @@ def load_model(
         trust_remote_code=True,
         torch_dtype=dtype,
         device_map=device,
-        use_safetensors=True
+        use_safetensors=True,
         quantization_config=quant_config,
     )
     return model, processor
