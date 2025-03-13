@@ -522,60 +522,71 @@ const Dashboard = ({
           <p>Manage your patient's medical forms and submissions</p>
         </div>
 
+        {/* Hidden file input for PDF upload */}
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          style={{ display: 'none' }} 
+          accept=".pdf" 
+          onChange={handleFileChange}
+        />
+        
+        {/* Upload error/success messages */}
+        {uploadError && (
+          <div className="upload-error-message">
+            {uploadError}
+          </div>
+        )}
+        
+        {uploadSuccess && (
+          <div className="upload-success-message">
+            {uploadSuccess}
+          </div>
+        )}
+
         <div className="dashboard-section">
           <h2 style={{ color: 'white' }}>Upload Fillable Form</h2>
           <div className="forms-grid">
             <div 
               className="create-form-card" 
               onClick={handleCreateForm}
-              style={{ opacity: isUploading ? 0.7 : 1, pointerEvents: isUploading ? 'none' : 'auto' }}
+              style={{
+                background: "linear-gradient(135deg, rgba(79, 255, 176, 0.2) 0%, rgba(79, 255, 176, 0.1) 100%)",
+                border: "2px dashed rgba(79, 255, 176, 0.5)",
+                borderRadius: "2rem",
+                padding: "1.5rem",
+                textAlign: "center",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+                marginBottom: "2rem",
+                position: "relative",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100px"
+              }}
             >
-              {isUploading ? (
-                <div className="create-form-icon">Uploading...</div>
-              ) : lastUploadedPdf ? (
-                <div className="last-upload-info">
-                  <div className="last-upload-success">
-                    <p className="last-upload-label">Uploaded:</p>
-                    <p className="last-upload-name">{lastUploadedPdf.originalFilename}</p>
-                    {lastUploadedPdf.patientName && (
-                      <p className="last-upload-patient">Patient: {lastUploadedPdf.patientName}</p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="create-form-icon">+</div>
-              )}
+              <div className="upload-icon">+</div>
             </div>
             
-            {forms.map(form => (
-              <div className="form-card" key={form.id}>
-                <div className="form-card-header">
-                  <div>
-                    <h3 className="form-card-title">{form.title}</h3>
-                    {form.patientName && (
-                      <div className="form-card-patient">Patient: {form.patientName}</div>
-                    )}
-                    <div className="form-card-date">
-                      {new Date(form.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="form-card-actions">
-                    <button 
-                      className="form-card-action edit"
-                      onClick={() => handleEditForm(form.id)}
-                    >
-                      ✎
-                    </button>
-                    <button 
-                      className="form-card-action delete"
-                      onClick={() => handleDeleteForm(form.id)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
+            {isUploading && (
+              <div className="upload-status">
+                <div className="upload-spinner"></div>
+                <span>Uploading...</span>
               </div>
-            ))}
+            )}
+            
+            {lastUploadedPdf && (
+              <div className="last-upload-info">
+                <div className="last-upload-title">Last Uploaded:</div>
+                <div className="last-upload-name">{lastUploadedPdf.originalFilename}</div>
+                {lastUploadedPdf.patientName && (
+                  <div className="last-upload-patient">Patient: {lastUploadedPdf.patientName}</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
