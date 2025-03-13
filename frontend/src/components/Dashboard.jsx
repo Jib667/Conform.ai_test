@@ -167,8 +167,8 @@ const Dashboard = ({
         title: data.pdf.originalFilename.replace('.pdf', ''),
         createdAt: data.pdf.uploadDate,
         pdfUrl: data.pdf.url,
-        filename: data.pdf.filename,  // Make sure to include the filename
-        originalFilename: data.pdf.originalFilename  // Make sure to include the originalFilename
+        filename: data.pdf.filename,
+        originalFilename: data.pdf.originalFilename
       };
       
       // Show patient assignment popup
@@ -320,6 +320,20 @@ const Dashboard = ({
     setPdfToDelete(null);
   };
 
+  // Add a useEffect to handle the automatic clearing of success messages
+  useEffect(() => {
+    // If there's a success message, set a timeout to clear it
+    if (uploadSuccess) {
+      const timeoutId = setTimeout(() => {
+        setUploadSuccess('');
+      }, 5000);
+      
+      // Return a cleanup function to clear the timeout if the component unmounts
+      // or if uploadSuccess changes before the timeout completes
+      return () => clearTimeout(timeoutId);
+    }
+  }, [uploadSuccess]);
+
   // Function to handle patient assignment
   const handleAssignPatient = async () => {
     if (!formToEdit) return;
@@ -334,10 +348,10 @@ const Dashboard = ({
     }
     
     try {
+      // Add a new patient via API
       let patientId;
       
       if (newPatient.trim()) {
-        // Add a new patient via API
         const response = await fetch('/api/patients', {
           method: 'POST',
           headers: {
@@ -408,9 +422,8 @@ const Dashboard = ({
         });
       }
       
-      // Show success message
+      // Show success message (timeout will be handled by the useEffect)
       setUploadSuccess(`Form assigned to ${patientName}`);
-      setTimeout(() => setUploadSuccess(''), 3000);
       
       // Close the popup
       setShowPatientAssignmentPopup(false);
@@ -433,7 +446,6 @@ const Dashboard = ({
     if (lastUploadedPdf && formToEdit && lastUploadedPdf.id === formToEdit.id) {
       // Show an info message that the form wasn't assigned to a patient
       setUploadSuccess('PDF uploaded without patient assignment');
-      setTimeout(() => setUploadSuccess(''), 3000);
     }
     
     setShowPatientAssignmentPopup(false);
@@ -509,28 +521,6 @@ const Dashboard = ({
           <h1>{user?.name.split(' ')[0]}'s Dashboard</h1>
           <p>Manage your patient's medical forms and submissions</p>
         </div>
-
-        {/* Hidden file input for PDF upload */}
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          style={{ display: 'none' }} 
-          accept=".pdf" 
-          onChange={handleFileChange}
-        />
-
-        {/* Upload error/success messages */}
-        {uploadError && (
-          <div className="upload-error-message">
-            {uploadError}
-          </div>
-        )}
-        
-        {uploadSuccess && (
-          <div className="upload-success-message">
-            {uploadSuccess}
-          </div>
-        )}
 
         <div className="dashboard-section">
           <h2 style={{ color: 'white' }}>Upload Fillable Form</h2>

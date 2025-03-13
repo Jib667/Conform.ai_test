@@ -326,7 +326,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  height: 150px;
+  height: 100px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -766,4 +766,27 @@
   padding: 2rem;
   color: rgba(255, 255, 255, 0.7);
   font-style: italic;
+}
+
+.upload-button:hover {
+  background: linear-gradient(135deg, rgba(79, 255, 176, 0.3) 0%, rgba(79, 255, 176, 0.15) 100%);
+  border-color: rgba(79, 255, 176, 0.7);
+  transform: translateY(-2px);
+}
+
+.upload-icon {
+  font-size: 2rem; /* Slightly reduced if needed */
+  margin-bottom: 0.5rem; /* Reduced from 1rem */
+  color: #4FFFB0;
+}
+
+.upload-text {
+  font-size: 1.2rem;
+  color: white;
+  margin-bottom: 0.25rem; /* Reduced from 0.5rem */
+}
+
+.upload-subtext {
+  font-size: 0.9rem; /* Slightly reduced */
+  color: rgba(255, 255, 255, 0.7);
 } 
