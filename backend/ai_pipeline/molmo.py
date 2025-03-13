@@ -83,7 +83,7 @@ if __name__ == '__main__':
     pipe = pipeline("image-text-to-text",
                    model="allenai/MolmoE-1B-0924",
                    trust_remote_code=True,
-                   device="cpu")  # Use "mps" for Apple Silicon if available
+                   device="cuda")
 
     # Format the query following Molmo's message format
     query_text = "Please identify all answer boxes or checkbox options in this form. For each answer box, place a point at the center of the box. Make sure to use <point> tags with x and y coordinates."
