@@ -1,10 +1,13 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import sqlite3
 import os
 from datetime import datetime
+import re
+import PyPDF2
 
 # Create the FastAPI app
 app = FastAPI()
@@ -17,6 +20,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Create uploads directory if it doesn't exist
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Mount the uploads directory to make files accessible
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Database setup
 DB_PATH = os.path.join(os.path.dirname(__file__), "conform.db")
@@ -43,12 +53,49 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     ''')
+    
+    # Create table for uploaded PDFs
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS uploaded_pdfs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        filename TEXT NOT NULL,
+        original_filename TEXT NOT NULL,
+        is_fillable BOOLEAN NOT NULL,
+        upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+    ''')
+    
     conn.commit()
     conn.close()
     print("Connected to the SQLite database")
 
 # Call init_db at startup
 init_db()
+
+# Function to check if a PDF is fillable
+def is_pdf_fillable(file_path):
+    try:
+        with open(file_path, 'rb') as f:
+            pdf = PyPDF2.PdfReader(f)
+            # Check if the PDF has form fields
+            fields = pdf.get_fields()
+            # Return True if fields is not None and not empty
+            return fields is not None and len(fields) > 0
+    except Exception as e:
+        print(f"Error checking if PDF is fillable: {e}")
+        return False
+
+# Function to get the next upload number for a user
+def get_next_upload_number(db, user_id):
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) FROM uploaded_pdfs WHERE user_id = ?",
+        (user_id,)
+    )
+    count = cursor.fetchone()[0]
+    return count + 1
 
 # Pydantic models
 class UserSignup(BaseModel):
@@ -164,6 +211,195 @@ def update_user(
         if "UNIQUE constraint failed" in str(e):
             raise HTTPException(status_code=409, detail="Email already registered")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Endpoint to upload a PDF
+@app.post("/api/upload-pdf")
+async def upload_pdf(
+    file: UploadFile = File(...),
+    user_id: int = Form(...),
+):
+    try:
+        # Create a new database connection for this request
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Verify the user exists
+        cursor.execute("SELECT name FROM users WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Get user's last name
+        last_name = user[0].split()[-1] if len(user[0].split()) > 1 else user[0]
+        
+        # Check if the file is a PDF
+        if not file.filename.lower().endswith('.pdf'):
+            conn.close()
+            raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+        
+        # Get the next upload number
+        cursor.execute(
+            "SELECT COUNT(*) FROM uploaded_pdfs WHERE user_id = ?",
+            (user_id,)
+        )
+        count = cursor.fetchone()[0]
+        upload_number = count + 1
+        
+        # Create the new filename
+        new_filename = f"custom_upload{upload_number:03d}_{last_name}.pdf"
+        file_path = os.path.join(UPLOAD_DIR, new_filename)
+        
+        print(f"Saving file to: {file_path}")
+        
+        # Read file content
+        contents = await file.read()
+        print(f"Read {len(contents)} bytes from uploaded file")
+        
+        # Save the file
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
+        
+        print(f"File saved successfully to {file_path}")
+        
+        # Save the file information to the database
+        cursor.execute(
+            """
+            INSERT INTO uploaded_pdfs (user_id, filename, original_filename, is_fillable)
+            VALUES (?, ?, ?, ?)
+            """,
+            (user_id, new_filename, file.filename, True)
+        )
+        conn.commit()
+        print(f"Database record created for {new_filename}")
+        
+        # Get the uploaded PDF information
+        cursor.execute(
+            """
+            SELECT id, filename, original_filename, upload_date
+            FROM uploaded_pdfs
+            WHERE user_id = ? AND filename = ?
+            """,
+            (user_id, new_filename)
+        )
+        pdf_info = cursor.fetchone()
+        
+        # Create a response dictionary
+        response_data = {
+            "message": "PDF uploaded successfully",
+            "pdf": {
+                "id": pdf_info[0],
+                "filename": pdf_info[1],
+                "originalFilename": pdf_info[2],
+                "uploadDate": pdf_info[3],
+                "url": f"/uploads/{new_filename}"
+            }
+        }
+        
+        # Close the database connection
+        conn.close()
+        
+        return response_data
+        
+    except Exception as e:
+        # If any error occurs, make sure to clean up
+        if 'file_path' in locals() and os.path.exists(file_path):
+            os.remove(file_path)
+        if 'conn' in locals():
+            conn.close()
+        print(f"Error during PDF upload: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+# Endpoint to get all uploaded PDFs for a user
+@app.get("/api/user/{user_id}/pdfs")
+def get_user_pdfs(user_id: int):
+    try:
+        # Create a new database connection for this request
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            """
+            SELECT id, filename, original_filename, upload_date
+            FROM uploaded_pdfs
+            WHERE user_id = ?
+            ORDER BY upload_date DESC
+            """,
+            (user_id,)
+        )
+        
+        pdfs = []
+        for row in cursor.fetchall():
+            pdfs.append({
+                "id": row[0],
+                "filename": row[1],
+                "originalFilename": row[2],
+                "uploadDate": row[3],
+                "url": f"/uploads/{row[1]}"
+            })
+        
+        conn.close()
+        return {"pdfs": pdfs}
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        print(f"Error fetching user PDFs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch PDFs: {str(e)}")
+
+# Endpoint to delete a PDF
+@app.delete("/api/pdfs/{pdf_id}")
+def delete_pdf(pdf_id: int):
+    try:
+        # Create a new database connection for this request
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Get the PDF information before deleting
+        cursor.execute(
+            """
+            SELECT filename, user_id
+            FROM uploaded_pdfs
+            WHERE id = ?
+            """,
+            (pdf_id,)
+        )
+        
+        pdf_info = cursor.fetchone()
+        if not pdf_info:
+            conn.close()
+            raise HTTPException(status_code=404, detail="PDF not found")
+        
+        # Get the file path
+        file_path = os.path.join(UPLOAD_DIR, pdf_info['filename'])
+        
+        # Delete the file if it exists
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"Deleted file: {file_path}")
+        
+        # Delete the database record
+        cursor.execute(
+            """
+            DELETE FROM uploaded_pdfs
+            WHERE id = ?
+            """,
+            (pdf_id,)
+        )
+        conn.commit()
+        
+        conn.close()
+        return {"message": "PDF deleted successfully"}
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        print(f"Error deleting PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete PDF: {str(e)}")
 
 # Run the server with uvicorn
 if __name__ == "__main__":
