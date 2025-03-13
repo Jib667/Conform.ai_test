@@ -430,8 +430,8 @@ const Dashboard = ({
       setSelectedPatient('');
       setNewPatient('');
       
-      // Fetch the latest PDFs to ensure the list is up to date
-      fetchUserPdfs();
+      // After successfully assigning a patient, refresh the patient list
+      fetchUserPatients();
       
     } catch (error) {
       console.error('Error assigning patient:', error);
@@ -649,6 +649,65 @@ const Dashboard = ({
               onClick={() => setShowEditProfile(true)}
             >
               Edit Profile
+            </button>
+          </div>
+
+          <div className="dashboard-card patient-manager-card">
+            <h2>Patient Manager</h2>
+            
+            {patients.length > 0 ? (
+              <div className="patient-list">
+                {patients.map(patient => {
+                  // Count forms for this patient
+                  const patientForms = userPdfs.filter(pdf => 
+                    pdf.patientId === patient.id || 
+                    (pdf.patientName && pdf.patientName === patient.name)
+                  );
+                  
+                  return (
+                    <div className="patient-item" key={patient.id}>
+                      <div className="patient-name">{patient.name}</div>
+                      <div className="patient-form-count">{patientForms.length} forms</div>
+                      <div className="patient-forms-dropdown">
+                        <button className="dropdown-toggle">
+                          View Forms
+                          <span className="dropdown-arrow">▼</span>
+                        </button>
+                        
+                        <div className="dropdown-content">
+                          {patientForms.length > 0 ? (
+                            patientForms.map(form => (
+                              <div className="dropdown-form-item" key={form.id}>
+                                <span className="dropdown-form-name">{form.originalFilename}</span>
+                                <span className="dropdown-form-date">
+                                  {new Date(form.uploadDate).toLocaleDateString()}
+                                </span>
+                                <button 
+                                  className="dropdown-form-action"
+                                  onClick={() => handleEditForm(form.id)}
+                                >
+                                  ✎
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="dropdown-empty">No forms assigned</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-state">No patients added yet</div>
+            )}
+            
+            <button 
+              className="dashboard-button"
+              onClick={() => setShowPatientAssignmentPopup(true)}
+            >
+              Add New Patient
             </button>
           </div>
         </div>
