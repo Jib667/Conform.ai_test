@@ -22,6 +22,8 @@ const Dashboard = ({
   const [userPdfs, setUserPdfs] = useState([]);
   const [lastUploadedPdf, setLastUploadedPdf] = useState(null);
   const [showAllForms, setShowAllForms] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [pdfToDelete, setPdfToDelete] = useState(null);
   const fileInputRef = useRef(null);
   
   // Fetch user's PDFs on component mount
@@ -176,13 +178,16 @@ const Dashboard = ({
     setShowAllForms(false);
   };
 
-  const handleDeletePdf = async (pdfId) => {
-    if (!window.confirm('Are you sure you want to delete this form?')) {
-      return;
-    }
+  const handleDeletePdf = (pdfId) => {
+    setPdfToDelete(pdfId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!pdfToDelete) return;
     
     try {
-      const response = await fetch(`/api/pdfs/${pdfId}`, {
+      const response = await fetch(`/api/pdfs/${pdfToDelete}`, {
         method: 'DELETE',
       });
       
@@ -191,10 +196,10 @@ const Dashboard = ({
       }
       
       // Remove the PDF from the userPdfs state
-      setUserPdfs(userPdfs.filter(pdf => pdf.id !== pdfId));
+      setUserPdfs(userPdfs.filter(pdf => pdf.id !== pdfToDelete));
       
       // If this was the last uploaded PDF, clear it
-      if (lastUploadedPdf && lastUploadedPdf.id === pdfId) {
+      if (lastUploadedPdf && lastUploadedPdf.id === pdfToDelete) {
         setLastUploadedPdf(null);
       }
       
@@ -206,7 +211,16 @@ const Dashboard = ({
       console.error('Error deleting PDF:', error);
       setUploadError('Failed to delete form');
       setTimeout(() => setUploadError(''), 5000);
+    } finally {
+      // Close the confirmation modal
+      setShowDeleteConfirm(false);
+      setPdfToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setPdfToDelete(null);
   };
 
   if (showFormEditor) {
@@ -513,6 +527,37 @@ const Dashboard = ({
               ) : (
                 <p className="all-forms-empty">No forms uploaded yet</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="modal-overlay" onClick={cancelDelete}>
+          <div className="modal-content delete-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirm Delete</h2>
+              <button className="modal-close" onClick={cancelDelete}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="delete-confirm-message">
+                Are you sure you want to delete this form? This action cannot be undone.
+              </p>
+              <div className="delete-confirm-actions">
+                <button 
+                  className="dashboard-button secondary"
+                  onClick={cancelDelete}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="dashboard-button delete-button"
+                  onClick={confirmDelete}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         </div>
