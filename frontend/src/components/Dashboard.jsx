@@ -26,7 +26,13 @@ const Dashboard = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pdfToDelete, setPdfToDelete] = useState(null);
   const [currentFormId, setCurrentFormId] = useState(null);
+  const [showPatientAssignmentPopup, setShowPatientAssignmentPopup] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState('');
+  const [newPatient, setNewPatient] = useState('');
+  const [patients, setPatients] = useState([]);
+  const [formToEdit, setFormToEdit] = useState(null);
   const fileInputRef = useRef(null);
+  const [isLoadingForms, setIsLoadingForms] = useState(false);
   
   // Fetch user's PDFs on component mount
   useEffect(() => {
@@ -44,6 +50,44 @@ const Dashboard = ({
       }
     } catch (error) {
       console.error('Error fetching user PDFs:', error);
+    }
+  };
+  
+  // Fetch patients for the logged-in user
+  useEffect(() => {
+    if (user) {
+      fetchUserPatients();
+    }
+  }, [user]);
+  
+  const fetchUserPatients = async () => {
+    try {
+      const response = await fetch(`/api/user/${user.id}/patients`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPatients(data.patients);
+      } else {
+        console.error('Error fetching patients:', response.statusText);
+        // Use mock data as fallback
+        if (patients.length === 0) {
+          setPatients([
+            { id: 1, name: 'John Doe', userId: user.id },
+            { id: 2, name: 'Jane Smith', userId: user.id },
+            { id: 3, name: 'Robert Johnson', userId: user.id }
+          ]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user patients:', error);
+      // Use mock data as fallback
+      if (patients.length === 0) {
+        setPatients([
+          { id: 1, name: 'John Doe', userId: user.id },
+          { id: 2, name: 'Jane Smith', userId: user.id },
+          { id: 3, name: 'Robert Johnson', userId: user.id }
+        ]);
+      }
     }
   };
   
@@ -114,31 +158,22 @@ const Dashboard = ({
       
       console.log('Upload successful:', data);
       
-      setUploadSuccess('PDF uploaded successfully!');
-      setTimeout(() => setUploadSuccess(''), 3000);
-      
-      // Set the last uploaded PDF
+      // Save the uploaded PDF
       setLastUploadedPdf(data.pdf);
       
-      // Refresh the user's PDFs
-      fetchUserPdfs();
-      
-      // Add the form to the forms list
+      // Create a form object from the uploaded PDF
       const newForm = {
         id: data.pdf.id,
         title: data.pdf.originalFilename.replace('.pdf', ''),
         createdAt: data.pdf.uploadDate,
-        pdfUrl: data.pdf.url
+        pdfUrl: data.pdf.url,
+        filename: data.pdf.filename,  // Make sure to include the filename
+        originalFilename: data.pdf.originalFilename  // Make sure to include the originalFilename
       };
       
-      if (setForms) {
-        setForms([newForm, ...forms]);
-      }
-      
-      // Clear the last uploaded PDF after 10 seconds
-      setTimeout(() => {
-        setLastUploadedPdf(null);
-      }, 10000);
+      // Show patient assignment popup
+      setFormToEdit(newForm);
+      setShowPatientAssignmentPopup(true);
       
     } catch (error) {
       console.error('Error uploading PDF:', error);
@@ -165,22 +200,10 @@ const Dashboard = ({
       };
       
       // Set the form to be edited
-      if (setForms) {
-        // Add the form to the forms list if it's not already there
-        const formExists = forms.some(form => form.id === formData.id);
-        if (!formExists) {
-          setForms([formData, ...forms]);
-        }
-      }
+      setFormToEdit(formData);
       
-      // Open the form editor
-      setShowFormEditor(true);
-      
-      // Store the current form ID for the editor to use
-      setCurrentFormId(formData.id);
-      
-      // Scroll to top
-      scrollToTop();
+      // Show the patient assignment popup
+      setShowPatientAssignmentPopup(true);
     } else {
       console.error(`Form with ID ${formId} not found`);
       setUploadError('Form not found');
@@ -206,8 +229,46 @@ const Dashboard = ({
     setShowFormEditor(false);
   };
 
-  const handleViewAllForms = () => {
+  const handleViewAllForms = async () => {
+    setIsLoadingForms(true);
+    
+    // Fetch the latest PDFs with patient information
+    await fetchPdfsWithPatientInfo();
+    
+    // Show the modal and hide loading
     setShowAllForms(true);
+    setIsLoadingForms(false);
+  };
+
+  const fetchPdfsWithPatientInfo = async () => {
+    try {
+      console.log("Fetching PDFs with patient info...");
+      
+      // Fetch PDFs from API
+      const response = await fetch(`/api/user/${user.id}/pdfs`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Log the raw data from the API
+        console.log("API Response:", data);
+        console.log("PDFs from API:", data.pdfs);
+        
+        // Check if any PDFs have patient information
+        const hasPatientsInfo = data.pdfs.some(pdf => pdf.patientName);
+        console.log("Any PDFs have patient info?", hasPatientsInfo);
+        
+        if (!hasPatientsInfo) {
+          console.log("No patient info found in API response. Property names:", 
+            Object.keys(data.pdfs[0] || {}));
+        }
+        
+        // Update the userPdfs state with the data directly from the API
+        setUserPdfs(data.pdfs);
+      }
+    } catch (error) {
+      console.error('Error fetching PDFs with patient information:', error);
+    }
   };
 
   const handleCloseAllForms = () => {
@@ -257,6 +318,127 @@ const Dashboard = ({
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
     setPdfToDelete(null);
+  };
+
+  // Function to handle patient assignment
+  const handleAssignPatient = async () => {
+    if (!formToEdit) return;
+    
+    // Check if we're using an existing patient or adding a new one
+    const patientName = newPatient.trim() ? newPatient : selectedPatient;
+    
+    if (!patientName) {
+      setUploadError('Please select or add a patient');
+      setTimeout(() => setUploadError(''), 3000);
+      return;
+    }
+    
+    try {
+      let patientId;
+      
+      if (newPatient.trim()) {
+        // Add a new patient via API
+        const response = await fetch('/api/patients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: newPatient,
+            user_id: user.id
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to add new patient');
+        }
+        
+        const data = await response.json();
+        patientId = data.patient.id;
+        
+        // Update local patients list
+        setPatients([...patients, data.patient]);
+      } else {
+        // Find the selected patient's ID
+        const selectedPatientObj = patients.find(p => p.name === selectedPatient);
+        patientId = selectedPatientObj ? selectedPatientObj.id : null;
+      }
+      
+      // Assign the patient to the PDF via API
+      const assignResponse = await fetch(`/api/pdfs/${formToEdit.id}/patient`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patient_id: patientId
+        }),
+      });
+      
+      if (!assignResponse.ok) {
+        throw new Error('Failed to assign patient to PDF');
+      }
+      
+      // Update the form with the patient name
+      const updatedForm = {
+        ...formToEdit,
+        patientName: patientName,
+        patientId: patientId
+      };
+      
+      // Update forms list
+      if (setForms) {
+        setForms([updatedForm, ...forms.filter(form => form.id !== updatedForm.id)]);
+      }
+      
+      // Update the userPdfs array to include patient information
+      const updatedPdfs = userPdfs.map(pdf => 
+        pdf.id === formToEdit.id ? { ...pdf, patientName: patientName, patientId: patientId } : pdf
+      );
+      
+      // Update the userPdfs state with the new data
+      setUserPdfs(updatedPdfs);
+      
+      // If this was the last uploaded PDF, update it with patient info
+      if (lastUploadedPdf && lastUploadedPdf.id === formToEdit.id) {
+        setLastUploadedPdf({
+          ...lastUploadedPdf,
+          patientName: patientName,
+          patientId: patientId
+        });
+      }
+      
+      // Show success message
+      setUploadSuccess(`Form assigned to ${patientName}`);
+      setTimeout(() => setUploadSuccess(''), 3000);
+      
+      // Close the popup
+      setShowPatientAssignmentPopup(false);
+      setSelectedPatient('');
+      setNewPatient('');
+      
+      // Fetch the latest PDFs to ensure the list is up to date
+      fetchUserPdfs();
+      
+    } catch (error) {
+      console.error('Error assigning patient:', error);
+      setUploadError(`Failed to assign patient: ${error.message}`);
+      setTimeout(() => setUploadError(''), 5000);
+    }
+  };
+  
+  // Function to cancel patient assignment
+  const handleCancelAssignment = () => {
+    // If this was from an upload, we need to handle the canceled assignment
+    if (lastUploadedPdf && formToEdit && lastUploadedPdf.id === formToEdit.id) {
+      // Show an info message that the form wasn't assigned to a patient
+      setUploadSuccess('PDF uploaded without patient assignment');
+      setTimeout(() => setUploadSuccess(''), 3000);
+    }
+    
+    setShowPatientAssignmentPopup(false);
+    setSelectedPatient('');
+    setNewPatient('');
   };
 
   if (showFormEditor) {
@@ -365,6 +547,9 @@ const Dashboard = ({
                   <div className="last-upload-success">
                     <p className="last-upload-label">Uploaded:</p>
                     <p className="last-upload-name">{lastUploadedPdf.originalFilename}</p>
+                    {lastUploadedPdf.patientName && (
+                      <p className="last-upload-patient">Patient: {lastUploadedPdf.patientName}</p>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -377,6 +562,9 @@ const Dashboard = ({
                 <div className="form-card-header">
                   <div>
                     <h3 className="form-card-title">{form.title}</h3>
+                    {form.patientName && (
+                      <div className="form-card-patient">Patient: {form.patientName}</div>
+                    )}
                     <div className="form-card-date">
                       {new Date(form.createdAt).toLocaleDateString()}
                     </div>
@@ -408,7 +596,12 @@ const Dashboard = ({
               <div className="recent-forms-list">
                 {userPdfs.slice(0, 3).map(pdf => (
                   <div className="recent-form-item" key={pdf.id}>
-                    <span className="recent-form-name">{pdf.originalFilename}</span>
+                    <div className="recent-form-info">
+                      <span className="recent-form-name">{pdf.originalFilename}</span>
+                      {pdf.patientName && (
+                        <span className="recent-form-patient">Patient: {pdf.patientName}</span>
+                      )}
+                    </div>
                     <div className="recent-form-actions">
                       <span className="recent-form-date">
                         {new Date(pdf.uploadDate).toLocaleDateString()}
@@ -472,55 +665,25 @@ const Dashboard = ({
           <div className="footer-section">
             <h4>Pages</h4>
             <ul>
-              <li>
-                <a 
-                  href="/" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Force navigation to home page
-                    window.location.href = '/';
-                  }}
-                >
-                  Home
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="/dashboard" 
-                  style={{ fontWeight: 'bold', color: '#4FFFB0' }}
-                >
-                  Dashboard
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="/form-editor" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (onCreateForm) {
-                      onCreateForm();
-                    }
-                  }}
-                >
-                  Form Editor
-                </a>
-              </li>
+              <li><span className="footer-text">Home</span></li>
+              <li><span className="footer-text" style={{ fontWeight: 'bold', color: '#4FFFB0' }}>Dashboard</span></li>
+              <li><span className="footer-text">Form Editor</span></li>
             </ul>
           </div>
           <div className="footer-section">
             <h4>Product</h4>
             <ul>
-              <li><a href="#">Features</a></li>
-              <li><a href="#">Use Cases</a></li>
-              <li><a href="#">Documentation</a></li>
+              <li><span className="footer-text">Features</span></li>
+              <li><span className="footer-text">Use Cases</span></li>
+              <li><span className="footer-text">Documentation</span></li>
             </ul>
           </div>
           <div className="footer-section">
             <h4>Company</h4>
             <ul>
-              <li><a href="#">About Us</a></li>
-              <li><a href="#">Contact</a></li>
-              <li><a href="#">Future Work</a></li>
+              <li><span className="footer-text">About Us</span></li>
+              <li><span className="footer-text">Contact</span></li>
+              <li><span className="footer-text">Future Work</span></li>
             </ul>
           </div>
           <div className="footer-section">
@@ -557,32 +720,47 @@ const Dashboard = ({
               <button className="modal-close" onClick={handleCloseAllForms}>×</button>
             </div>
             <div className="modal-body">
-              {userPdfs.length > 0 ? (
+              {isLoadingForms ? (
+                <div className="loading-indicator">Loading forms...</div>
+              ) : userPdfs.length > 0 ? (
                 <div className="all-forms-list">
-                  {userPdfs.map(pdf => (
-                    <div className="all-forms-item" key={pdf.id}>
-                      <div className="all-forms-item-left">
-                        <span className="all-forms-name">{pdf.originalFilename}</span>
-                        <span className="all-forms-date">
-                          {new Date(pdf.uploadDate).toLocaleDateString()}
-                        </span>
+                  {userPdfs.map(pdf => {
+                    // Debug log to check each PDF
+                    console.log('Rendering PDF in View All Forms:', pdf);
+                    
+                    // Check for patient name in either property
+                    const patientName = pdf.patientName || (pdf.patient_name);
+                    
+                    return (
+                      <div className="all-forms-item" key={pdf.id}>
+                        <div className="all-forms-item-left">
+                          <div className="all-forms-name-container">
+                            <span className="all-forms-name">{pdf.originalFilename}</span>
+                            {patientName && (
+                              <span className="all-forms-patient">Patient: {patientName}</span>
+                            )}
+                          </div>
+                          <span className="all-forms-date">
+                            {new Date(pdf.uploadDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="all-forms-actions">
+                          <button 
+                            className="form-card-action edit"
+                            onClick={() => handleEditForm(pdf.id)}
+                          >
+                            ✎
+                          </button>
+                          <button 
+                            className="form-card-action delete"
+                            onClick={() => handleDeletePdf(pdf.id)}
+                          >
+                            −
+                          </button>
+                        </div>
                       </div>
-                      <div className="all-forms-actions">
-                        <button 
-                          className="form-card-action edit"
-                          onClick={() => handleEditForm(pdf.id)}
-                        >
-                          ✎
-                        </button>
-                        <button 
-                          className="form-card-action delete"
-                          onClick={() => handleDeletePdf(pdf.id)}
-                        >
-                          −
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="all-forms-empty">No forms uploaded yet</p>
@@ -616,6 +794,73 @@ const Dashboard = ({
                   onClick={confirmDelete}
                 >
                   Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Assignment Popup */}
+      {showPatientAssignmentPopup && (
+        <div className="modal-overlay" onClick={handleCancelAssignment}>
+          <div className="modal-content patient-assignment-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Assign Form to a Patient</h2>
+              <button className="modal-close" onClick={handleCancelAssignment}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label htmlFor="existingPatient">Select Existing Patient:</label>
+                <select 
+                  id="existingPatient" 
+                  className="patient-select"
+                  value={selectedPatient}
+                  onChange={(e) => {
+                    setSelectedPatient(e.target.value);
+                    if (e.target.value) {
+                      setNewPatient('');
+                    }
+                  }}
+                >
+                  <option value="">-- Select a patient --</option>
+                  {patients.map(patient => (
+                    <option key={patient.id} value={patient.name}>
+                      {patient.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="newPatient">Or Add a New Patient:</label>
+                <input 
+                  type="text" 
+                  id="newPatient" 
+                  className="patient-input"
+                  value={newPatient}
+                  onChange={(e) => {
+                    setNewPatient(e.target.value);
+                    if (e.target.value) {
+                      setSelectedPatient('');
+                    }
+                  }}
+                  placeholder="Enter patient name"
+                />
+              </div>
+              
+              <div className="patient-assignment-actions">
+                <button 
+                  className="dashboard-button secondary"
+                  onClick={handleCancelAssignment}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="dashboard-button"
+                  onClick={handleAssignPatient}
+                >
+                  Assign & Continue
                 </button>
               </div>
             </div>

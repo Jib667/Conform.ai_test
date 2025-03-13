@@ -434,54 +434,25 @@ const FormEditor = ({ user, onLogout, onToggleSidebar, onSaveForm, onCancel, for
           <div className="footer-section">
             <h4>Pages</h4>
             <ul>
-              <li>
-                <a 
-                  href="/" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Force navigation to home page
-                    window.location.href = '/';
-                  }}
-                >
-                  Home
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="/dashboard" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Force navigation to dashboard
-                    window.location.href = '/dashboard';
-                  }}
-                >
-                  Dashboard
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="/form-editor" 
-                  style={{ fontWeight: 'bold', color: '#4FFFB0' }}
-                >
-                  Form Editor
-                </a>
-              </li>
+              <li><span className="footer-text">Home</span></li>
+              <li><span className="footer-text">Dashboard</span></li>
+              <li><span className="footer-text" style={{ fontWeight: 'bold', color: '#4FFFB0' }}>Form Editor</span></li>
             </ul>
           </div>
           <div className="footer-section">
             <h4>Product</h4>
             <ul>
-              <li><a href="#">Features</a></li>
-              <li><a href="#">Use Cases</a></li>
-              <li><a href="#">Documentation</a></li>
+              <li><span className="footer-text">Features</span></li>
+              <li><span className="footer-text">Use Cases</span></li>
+              <li><span className="footer-text">Documentation</span></li>
             </ul>
           </div>
           <div className="footer-section">
             <h4>Company</h4>
             <ul>
-              <li><a href="#">About Us</a></li>
-              <li><a href="#">Contact</a></li>
-              <li><a href="#">Future Work</a></li>
+              <li><span className="footer-text">About Us</span></li>
+              <li><span className="footer-text">Contact</span></li>
+              <li><span className="footer-text">Future Work</span></li>
             </ul>
           </div>
           <div className="footer-section">

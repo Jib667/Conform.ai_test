@@ -595,6 +595,13 @@
   gap: 0.25rem;
 }
 
+.all-forms-name-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .all-forms-name {
   font-weight: 500;
   color: white;
@@ -652,4 +659,111 @@
 
 .dashboard-button.delete-button:hover {
   background: rgba(255, 79, 79, 0.9);
+}
+
+.footer-text {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  display: block;
+  padding: 5px 0;
+  cursor: default;
+}
+
+/* Patient Assignment Modal Styles */
+.patient-assignment-modal {
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: white;
+  font-weight: 500;
+}
+
+.patient-select,
+.patient-input {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 1rem;
+}
+
+.patient-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L0 3h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+.patient-select option {
+  background-color: #3B2B6D;
+}
+
+.patient-input:focus,
+.patient-select:focus {
+  outline: none;
+  border-color: #4FFFB0;
+}
+
+.patient-assignment-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* Update recent form item styles */
+.recent-form-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.recent-form-patient {
+  font-size: 0.875rem;
+  color: #4FFFB0;
+  font-style: italic;
+}
+
+/* Update all forms patient display */
+.all-forms-patient {
+  font-size: 0.875rem;
+  color: #4FFFB0;
+  font-style: italic;
+  padding: 0.1rem 0.5rem;
+  background: rgba(79, 255, 176, 0.1);
+  border-radius: 0.25rem;
+  display: inline-block;
+}
+
+/* Update last upload info styles */
+.last-upload-patient {
+  font-size: 0.875rem;
+  color: #4FFFB0;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.form-card-patient {
+  font-size: 0.875rem;
+  color: #4FFFB0;
+  font-style: italic;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
 } 

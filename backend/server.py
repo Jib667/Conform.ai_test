@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -8,6 +8,7 @@ import os
 from datetime import datetime
 import re
 import PyPDF2
+import json
 
 # Create the FastAPI app
 app = FastAPI()
@@ -67,8 +68,28 @@ def init_db():
     )
     ''')
     
+    # Create patients table if it doesn't exist
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS patients (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        user_id INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+    ''')
+    
+    # Add patient_id column to pdfs table if it doesn't exist
+    cursor.execute("PRAGMA table_info(uploaded_pdfs)")
+    columns = cursor.fetchall()
+    column_names = [column[1] for column in columns]
+    
+    if 'patient_id' not in column_names:
+        cursor.execute('''
+        ALTER TABLE uploaded_pdfs ADD COLUMN patient_id INTEGER
+        ''')
+    
     conn.commit()
-    conn.close()
+    cursor.close()
     print("Connected to the SQLite database")
 
 # Call init_db at startup
@@ -314,7 +335,7 @@ async def upload_pdf(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
-# Endpoint to get all uploaded PDFs for a user
+# Endpoint to get all uploaded PDFs for a user with patient information
 @app.get("/api/user/{user_id}/pdfs")
 def get_user_pdfs(user_id: int):
     try:
@@ -323,25 +344,35 @@ def get_user_pdfs(user_id: int):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
+        # Modified query to include patient information using LEFT JOIN
         cursor.execute(
             """
-            SELECT id, filename, original_filename, upload_date
-            FROM uploaded_pdfs
-            WHERE user_id = ?
-            ORDER BY upload_date DESC
+            SELECT p.id, p.filename, p.original_filename, p.upload_date, 
+                   pat.id as patient_id, pat.name as patient_name
+            FROM uploaded_pdfs p
+            LEFT JOIN patients pat ON p.patient_id = pat.id
+            WHERE p.user_id = ?
+            ORDER BY p.upload_date DESC
             """,
             (user_id,)
         )
         
         pdfs = []
         for row in cursor.fetchall():
-            pdfs.append({
+            pdf_data = {
                 "id": row[0],
                 "filename": row[1],
                 "originalFilename": row[2],
                 "uploadDate": row[3],
                 "url": f"/uploads/{row[1]}"
-            })
+            }
+            
+            # Add patient information if available
+            if row[4]:  # If patient_id is not None
+                pdf_data["patientId"] = row[4]
+                pdf_data["patientName"] = row[5]
+            
+            pdfs.append(pdf_data)
         
         conn.close()
         return {"pdfs": pdfs}
@@ -400,6 +431,105 @@ def delete_pdf(pdf_id: int):
             conn.close()
         print(f"Error deleting PDF: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to delete PDF: {str(e)}")
+
+# Get patients for a user
+@app.get("/api/user/{user_id}/patients")
+def get_user_patients(user_id: int):
+    try:
+        # Create a new database connection for this request
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            "SELECT id, name FROM patients WHERE user_id = ?", 
+            (user_id,)
+        )
+        
+        patients = []
+        for row in cursor.fetchall():
+            patients.append({
+                "id": row[0],
+                "name": row[1]
+            })
+        
+        conn.close()
+        return {"patients": patients}
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        print(f"Error fetching patients: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch patients: {str(e)}")
+
+# Add a new patient
+@app.post("/api/patients")
+async def add_patient(request: Request):
+    try:
+        # Get request body
+        data = await request.json()
+        user_id = data.get('user_id')
+        name = data.get('name')
+        
+        if not user_id or not name:
+            raise HTTPException(status_code=400, detail="User ID and name are required")
+        
+        # Create a new database connection for this request
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            "INSERT INTO patients (name, user_id) VALUES (?, ?)",
+            (name, user_id)
+        )
+        conn.commit()
+        
+        patient_id = cursor.lastrowid
+        
+        conn.close()
+        
+        return {
+            "patient": {
+                "id": patient_id,
+                "name": name
+            }
+        }
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        print(f"Error adding patient: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add patient: {str(e)}")
+
+# Assign a patient to a PDF
+@app.post("/api/pdfs/{pdf_id}/patient")
+async def assign_patient_to_pdf(pdf_id: int, request: Request):
+    try:
+        # Get request body
+        data = await request.json()
+        patient_id = data.get('patient_id')
+        
+        if not patient_id:
+            raise HTTPException(status_code=400, detail="Patient ID is required")
+        
+        # Create a new database connection for this request
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            "UPDATE uploaded_pdfs SET patient_id = ? WHERE id = ?",
+            (patient_id, pdf_id)
+        )
+        conn.commit()
+        
+        conn.close()
+        
+        return {"success": True}
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        print(f"Error assigning patient to PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to assign patient: {str(e)}")
 
 # Run the server with uvicorn
 if __name__ == "__main__":
