@@ -663,6 +663,94 @@ def delete_patient(patient_id: int):
         
         raise HTTPException(status_code=500, detail=f"Failed to delete patient: {str(e)}")
 
+# Fix the create_patient endpoint to handle SQLite thread issues
+@app.post("/api/user/{user_id}/patients")
+async def create_patient(user_id: int, request: Request):
+    try:
+        # Get request body
+        data = await request.json()
+        
+        # Validate required fields
+        if 'name' not in data:
+            raise HTTPException(status_code=400, detail="Missing required field: name")
+        
+        patient_name = data['name']
+        
+        # Create a new database connection for this request
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Create a new patient
+        cursor.execute(
+            "INSERT INTO patients (name, user_id) VALUES (?, ?)",
+            (patient_name, user_id)
+        )
+        conn.commit()
+        
+        # Get the newly created patient
+        patient_id = cursor.lastrowid
+        cursor.execute("SELECT id, name, user_id FROM patients WHERE id = ?", (patient_id,))
+        patient = cursor.fetchone()
+        
+        # Close the connection
+        conn.close()
+        
+        if not patient:
+            raise HTTPException(status_code=500, detail="Failed to create patient")
+        
+        # Return the patient data
+        return {
+            "success": True,
+            "patient": {
+                "id": patient[0],
+                "name": patient[1],
+                "userId": patient[2]
+            }
+        }
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        print(f"Error creating patient: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create patient: {str(e)}")
+
+# Fix the associate_pdf_with_patient endpoint to handle SQLite thread issues
+@app.post("/api/pdfs/{pdf_id}/patient")
+async def associate_pdf_with_patient(pdf_id: int, request: Request):
+    try:
+        # Get request body
+        data = await request.json()
+        
+        # Validate required fields
+        if 'patient_id' not in data:
+            raise HTTPException(status_code=400, detail="Missing required field: patient_id")
+        
+        patient_id = data['patient_id']
+        
+        # Create a new database connection for this request
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Update the PDF to associate it with the patient
+        cursor.execute(
+            "UPDATE uploaded_pdfs SET patient_id = ? WHERE id = ?",
+            (patient_id, pdf_id)
+        )
+        conn.commit()
+        
+        # Check if the update was successful
+        if cursor.rowcount == 0:
+            conn.close()
+            raise HTTPException(status_code=404, detail="PDF not found")
+        
+        conn.close()
+        return {"success": True}
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        print(f"Error associating PDF with patient: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to associate PDF with patient: {str(e)}")
+
 # Run the server with uvicorn
 if __name__ == "__main__":
     import uvicorn
