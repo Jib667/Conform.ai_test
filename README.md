@@ -1,4 +1,4 @@
-# Conform.ai
+# Conform.ai (H2AI Georgetown Hackathon 2025)
 
 A web application for streamlining medical form filling and processing.
 
